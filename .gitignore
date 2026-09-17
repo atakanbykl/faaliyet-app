@@ -1,0 +1,125 @@
+# ===================================================
+# FieldOps Assistant - Git Yoksayma Dosyası (.gitignore)
+# ===================================================
+
+# --- Python & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Sanal Ortamlar (Virtual Environments) ---
+venv/
+.venv/
+env/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Testler & Kapsam (Testing & Coverage) ---
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+htmlcov/
+
+# --- IDE, Editör & Proje Ayarları ---
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# --- İşletim Sistemi Dosyaları (OS Generated) ---
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# --- Saha Operasyonları & Çalışma Zamanı Verileri (Runtime & Heavy Logs) ---
+# Saha görev oturumları ve toplanan yüksek boyutlu (20-30 GB) log arşivleri
+data/missions/*
+!data/missions/.gitkeep
+
+# Geçici çalışma dizinleri ve loglar
+*.log
+logs/
+*.tmp
+*.bak
+
+# Büyük sıkıştırılmış arşivler (data/packages klasöründeki örnekler hariç)
+*.tar.gz
+*.tgz
+*.tar
+*.zip
+*.pigz
+*.gz
+
+# Ancak örnek yazılım paketlerini koru
+!data/packages/**
+!data/packages/**/.gitkeep
+
+# --- Paketleme & PyInstaller / Dağıtım Çıktıları ---
+*.spec
+dist/
+build/
+*.exe
+*.app
+

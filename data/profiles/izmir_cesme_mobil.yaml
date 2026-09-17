@@ -1,0 +1,39 @@
+id: izmir_cesme_mobil
+name: İzmir Çeşme Mobil Saha Aracı
+description: Mobil araç üstü saha sistemi - 4G/LTE yönlendirici üzerinden haberleşme.
+target_device:
+  host: 192.168.1.150
+  port: 22
+  username: fielduser
+  password: null
+  key_path: null
+  use_local_mode: false
+  remote_log_dir: /var/log/fieldapp
+  remote_config_path: /etc/fieldapp/runtime.json
+equipment_checklist:
+- id: eq_10
+  name: Manyetik Araç Üstü GPS Anteni
+  description: ''
+  is_mandatory: true
+- id: eq_11
+  name: 12V Araç Çakmaklık Güç Kablosu
+  description: ''
+  is_mandatory: true
+- id: eq_12
+  name: 4G Yedek SIM Kart
+  description: ''
+  is_mandatory: true
+software_requirements:
+- name: MobileTrackerCore
+  expected_version: 1.8.2
+  package_filename: mobile_tracker_v1.8.2_x86_64.tar.gz
+  target_install_path: /opt/fieldapp
+  service_name: mobile_tracker
+  version_command: /opt/fieldapp/bin/mobile_tracker --version
+baseline_config_content: "{\n  \"station_id\": \"IZM-CESME-MOBIL\",\n  \"log_level\"\
+  : \"DEBUG\",\n  \"telemetry_interval_sec\": 1,\n  \"sensor_baudrate\": 9600,\n \
+  \ \"rf_frequency_mhz\": 868.0,\n  \"max_buffer_size_mb\": 200,\n  \"network\": {\n\
+  \    \"ip\": \"192.168.1.150\",\n    \"gateway\": \"192.168.1.1\",\n    \"port\"\
+  : 9000\n  },\n  \"features\": {\n    \"auto_backup\": false,\n    \"high_accuracy_gps\"\
+  : true,\n    \"encryption_enabled\": true\n  }\n}"
+custom_notes: GSM sinyali zayıf bölgelerde yerel SD kart tamponunu aktif ediniz.

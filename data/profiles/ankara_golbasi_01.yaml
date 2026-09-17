@@ -1,0 +1,48 @@
+id: ankara_golbasi_01
+name: Ankara Gölbaşı Radar İstasyonu
+description: Sabit radar ve telemetri istasyonu - Yüksek hızlı fiber bağlantı.
+target_device:
+  host: 192.168.10.50
+  port: 22
+  username: operator
+  password: null
+  key_path: null
+  use_local_mode: false
+  remote_log_dir: /opt/fieldapp/logs
+  remote_config_path: /opt/fieldapp/config/config.json
+equipment_checklist:
+- id: eq_1
+  name: Yedek Ethernet CAT6 Kablosu (15m)
+  description: ''
+  is_mandatory: true
+- id: eq_2
+  name: USB-RS232 Seri Port Dönüştürücü
+  description: ''
+  is_mandatory: true
+- id: eq_3
+  name: Saha Multimetresi ve Probları
+  description: ''
+  is_mandatory: false
+- id: eq_4
+  name: 24V Saha Güç Adaptörü & Akü
+  description: ''
+  is_mandatory: true
+- id: eq_5
+  name: Yansıtıcı Saha Yeleği & Baret
+  description: ''
+  is_mandatory: true
+software_requirements:
+- name: RadarControlService
+  expected_version: 2.4.0
+  package_filename: radar_control_v2.4.0_x86_64.tar.gz
+  target_install_path: /opt/fieldapp
+  service_name: radar_control
+  version_command: /opt/fieldapp/bin/radar_control --version
+baseline_config_content: "{\n  \"station_id\": \"ANK-GOLBASI-01\",\n  \"log_level\"\
+  : \"INFO\",\n  \"telemetry_interval_sec\": 5,\n  \"sensor_baudrate\": 115200,\n\
+  \  \"rf_frequency_mhz\": 433.92,\n  \"max_buffer_size_mb\": 500,\n  \"network\"\
+  : {\n    \"ip\": \"192.168.10.50\",\n    \"gateway\": \"192.168.10.1\",\n    \"\
+  port\": 8080\n  },\n  \"features\": {\n    \"auto_backup\": true,\n    \"high_accuracy_gps\"\
+  : true,\n    \"encryption_enabled\": true\n  }\n}"
+custom_notes: İstasyon jeneratörü faz-2 hattına bağlıdır. Yağışlı havalarda RF kutusunu
+  açmayınız.

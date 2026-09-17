@@ -1,0 +1,356 @@
+"""
+FieldOps Assistant - 2. Aşama: Sahada Faaliyet Başlangıcı (Stage 2: Field Initiation)
+Modern kart mimarisi, interaktif sürüm denetimi ve developer terminal akışı.
+"""
+
+from __future__ import annotations
+import sys
+from typing import Optional
+
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
+    QMessageBox, QScrollArea, QRadioButton, QButtonGroup
+)
+
+from app.adapters.base_adapter import BaseExecutionAdapter
+from app.adapters.local_adapter import LocalExecutionAdapter
+from app.adapters.ssh_adapter import SSHExecutionAdapter
+from app.core.models import LocationProfile, SoftwareRequirement
+from app.gui.widgets.live_console import LiveConsoleWidget
+from app.gui.widgets.touch_button import TouchButton
+
+
+class Stage2FieldInitWidget(QWidget):
+    """2. Aşama Ekranı: Cihaz bağlantısı, sürüm denetimi ve konfigürasyon aktivasyonu."""
+    stage_completed = Signal(BaseExecutionAdapter)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.profile: Optional[LocationProfile] = None
+        self.adapter: Optional[BaseExecutionAdapter] = None
+
+        self._setup_ui()
+
+    def _setup_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(24, 20, 24, 20)
+        main_layout.setSpacing(16)
+
+        # Üst Başlık Kartı
+        header = QFrame()
+        header.setProperty("class", "ModernCard")
+        h_layout = QVBoxLayout(header)
+        h_layout.setSpacing(4)
+
+        title = QLabel("2. AŞAMA: Sahada Faaliyet Başlangıcı")
+        title.setProperty("class", "SectionTitle")
+        h_layout.addWidget(title)
+
+        self.info_lbl = QLabel("Saha lokasyonuna ulaşıldığında cihaz bağlantısı ve operasyonel hazırlıklar yürütülür.")
+        self.info_lbl.setProperty("class", "SectionSubtitle")
+        h_layout.addWidget(self.info_lbl)
+        main_layout.addWidget(header)
+
+        # İki Sütunlu Düzen (Sol: Adım Kartları, Sağ: Canlı Terminal)
+        content_layout = QHBoxLayout()
+        content_layout.setSpacing(18)
+
+        # Sol Kolon (Adımlar)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+
+        left_container = QWidget()
+        l_layout = QVBoxLayout(left_container)
+        l_layout.setContentsMargins(0, 0, 4, 0)
+        l_layout.setSpacing(16)
+
+        # 1. KART: Bağlantı Modu
+        conn_card = QFrame()
+        conn_card.setProperty("class", "ModernCard")
+        c_box = QVBoxLayout(conn_card)
+        c_box.setSpacing(12)
+
+        lbl_s1 = QLabel("🔌 Cihaz Bağlantı Modu")
+        lbl_s1.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
+        c_box.addWidget(lbl_s1)
+
+        mode_row = QHBoxLayout()
+        self.mode_group = QButtonGroup(self)
+        self.radio_ssh = QRadioButton("Windows'tan Uzak SSH")
+        self.radio_local = QRadioButton("Linux Üzerinde Yerel")
+        self.mode_group.addButton(self.radio_ssh)
+        self.mode_group.addButton(self.radio_local)
+
+        if sys.platform != "win32":
+            self.radio_local.setChecked(True)
+        else:
+            self.radio_ssh.setChecked(True)
+
+        mode_row.addWidget(self.radio_ssh)
+        mode_row.addWidget(self.radio_local)
+        c_box.addLayout(mode_row)
+
+        test_row = QHBoxLayout()
+        self.btn_test_conn = TouchButton("Bağlantıyı Doğrula", variant="primary")
+        self.btn_test_conn.setFixedHeight(38)
+        self.btn_test_conn.clicked.connect(self._test_connection)
+        test_row.addWidget(self.btn_test_conn)
+
+        self.lbl_conn_status = QLabel("Test Edilmedi")
+        self.lbl_conn_status.setProperty("class", "PillBadge PillWarning")
+        test_row.addWidget(self.lbl_conn_status)
+        test_row.addStretch()
+        c_box.addLayout(test_row)
+        l_layout.addWidget(conn_card)
+
+        # 2. KART: Kurulu Yazılım Sürüm Denetimi
+        self.sw_card = QFrame()
+        self.sw_card.setProperty("class", "ModernCard")
+        self.sw_layout = QVBoxLayout(self.sw_card)
+        self.sw_layout.setSpacing(12)
+
+        sw_header = QHBoxLayout()
+        lbl_s2 = QLabel("🔍 Sahadaki Kurulu Yazılım Sürümleri")
+        lbl_s2.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
+        sw_header.addWidget(lbl_s2)
+        sw_header.addStretch()
+
+        self.btn_check_version = TouchButton("Sürümleri Sorgula", variant="ghost")
+        self.btn_check_version.setFixedHeight(34)
+        self.btn_check_version.setStyleSheet("font-size: 12px; padding: 2px 14px; min-height: 32px;")
+        self.btn_check_version.clicked.connect(self._check_installed_versions)
+        sw_header.addWidget(self.btn_check_version)
+        self.sw_layout.addLayout(sw_header)
+
+        self.sw_cards_container = QVBoxLayout()
+        self.sw_cards_container.setSpacing(8)
+        self.sw_layout.addLayout(self.sw_cards_container)
+        l_layout.addWidget(self.sw_card)
+
+        # 3. KART: Konfigürasyon Enjeksiyonu
+        cfg_card = QFrame()
+        cfg_card.setProperty("class", "ModernCard")
+        cfg_layout = QVBoxLayout(cfg_card)
+        cfg_layout.setSpacing(12)
+
+        lbl_s3 = QLabel("⚙ Lokasyona Özel Konfigürasyon Enjeksiyonu")
+        lbl_s3.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
+        cfg_layout.addWidget(lbl_s3)
+
+        self.lbl_cfg_target = QLabel()
+        self.lbl_cfg_target.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        cfg_layout.addWidget(self.lbl_cfg_target)
+
+        cfg_action_row = QHBoxLayout()
+        self.btn_apply_config = TouchButton("Konfigürasyonu Uygula (Onaylı)", variant="warning")
+        self.btn_apply_config.setFixedHeight(38)
+        self.btn_apply_config.clicked.connect(self._apply_configuration)
+        cfg_action_row.addWidget(self.btn_apply_config)
+
+        self.lbl_cfg_status = QLabel("Beklemede")
+        self.lbl_cfg_status.setProperty("class", "PillBadge PillWarning")
+        cfg_action_row.addWidget(self.lbl_cfg_status)
+        cfg_action_row.addStretch()
+        cfg_layout.addLayout(cfg_action_row)
+        l_layout.addWidget(cfg_card)
+
+        l_layout.addStretch()
+        scroll.setWidget(left_container)
+        content_layout.addWidget(scroll, 5)
+
+        # Sağ Kolon: Terminal
+        self.console = LiveConsoleWidget("Terminal & Canlı Saha Akışı")
+        content_layout.addWidget(self.console, 4)
+
+        main_layout.addLayout(content_layout)
+
+        # Alt Buton
+        bottom_bar = QHBoxLayout()
+        self.lbl_init_summary = QLabel()
+        self.lbl_init_summary.setStyleSheet("font-size: 13px; font-weight: 600;")
+        bottom_bar.addWidget(self.lbl_init_summary)
+        bottom_bar.addStretch()
+
+        self.btn_complete_stage2 = TouchButton("Faaliyeti Başlat ve Aşama 3'e Geç  ➔", variant="success")
+        self.btn_complete_stage2.setMinimumWidth(320)
+        self.btn_complete_stage2.setEnabled(False)
+        self.btn_complete_stage2.clicked.connect(self._on_complete_stage2)
+        bottom_bar.addWidget(self.btn_complete_stage2)
+
+        main_layout.addLayout(bottom_bar)
+
+    def load_session(self, profile: LocationProfile):
+        self.profile = profile
+        self.info_lbl.setText(f"Aktif Lokasyon: <b>{profile.name}</b>  •  Hedef: {profile.target_device.host}")
+        self.lbl_cfg_target.setText(f"Hedef Dosya: <code>{profile.target_device.remote_config_path}</code>")
+        self.console.append_log(f"2. Aşama Başlatıldı. Hedef: {profile.target_device.host}", "system")
+
+    def _get_active_adapter(self) -> BaseExecutionAdapter:
+        if self.radio_local.isChecked():
+            return LocalExecutionAdapter()
+        else:
+            return SSHExecutionAdapter(self.profile.target_device)
+
+    def _test_connection(self):
+        if not self.profile:
+            return
+
+        self.adapter = self._get_active_adapter()
+        self.console.append_log("Bağlantı doğrulanıyor...", "info")
+
+        success, msg = self.adapter.test_connection()
+        if success:
+            self.lbl_conn_status.setText("✓ Başarılı")
+            self.lbl_conn_status.setProperty("class", "PillBadge PillSuccess")
+            self.console.append_log(f"BAĞLANTI TAMAMLANDI: {msg}", "info")
+            self._check_installed_versions()
+        else:
+            self.lbl_conn_status.setText("Hata")
+            self.lbl_conn_status.setProperty("class", "PillBadge PillDanger")
+            self.console.append_log(f"HATA: {msg}", "error")
+
+        self.lbl_conn_status.style().unpolish(self.lbl_conn_status)
+        self.lbl_conn_status.style().polish(self.lbl_conn_status)
+
+    def _check_installed_versions(self):
+        if not self.adapter or not self.profile:
+            return
+
+        while self.sw_cards_container.count():
+            item = self.sw_cards_container.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        for req in self.profile.software_requirements:
+            card = QFrame()
+            card.setProperty("class", "ElevatedCard")
+            card_layout = QHBoxLayout(card)
+            card_layout.setContentsMargins(14, 10, 14, 10)
+
+            info_col = QVBoxLayout()
+            info_col.setSpacing(2)
+            name_lbl = QLabel(f"<b>{req.name}</b> &nbsp;(Beklenen: v{req.expected_version})")
+            name_lbl.setStyleSheet("font-size: 13px; color: #f8fafc;")
+            info_col.addWidget(name_lbl)
+
+            self.console.append_log(f"Sürüm sorgulanıyor: {req.version_command}", "dim")
+            detected_version = self.adapter.get_installed_version(req.version_command)
+
+            card_layout.addLayout(info_col)
+            card_layout.addStretch()
+
+            if detected_version:
+                self.console.append_log(f"{req.name} sürüm: {detected_version}", "info")
+                if req.expected_version in detected_version:
+                    badge = QLabel(f"✓ v{detected_version} Güncel")
+                    badge.setProperty("class", "PillBadge PillSuccess")
+                    card_layout.addWidget(badge)
+                else:
+                    badge = QLabel(f"v{detected_version} Farklı")
+                    badge.setProperty("class", "PillBadge PillWarning")
+                    card_layout.addWidget(badge)
+
+                    btn_update = TouchButton("Güncelle", variant="warning")
+                    btn_update.setFixedHeight(32)
+                    btn_update.setStyleSheet("font-size: 12px; padding: 2px 12px; min-height: 30px;")
+                    btn_update.clicked.connect(lambda _, r=req: self._deploy_software(r))
+                    card_layout.addWidget(btn_update)
+            else:
+                self.console.append_log(f"{req.name} kurulu değil.", "warn")
+                badge = QLabel("Kurulu Değil")
+                badge.setProperty("class", "PillBadge PillDanger")
+                card_layout.addWidget(badge)
+
+                btn_install = TouchButton("Kur", variant="primary")
+                btn_install.setFixedHeight(32)
+                btn_install.setStyleSheet("font-size: 12px; padding: 2px 12px; min-height: 30px;")
+                btn_install.clicked.connect(lambda _, r=req: self._deploy_software(r))
+                card_layout.addWidget(btn_install)
+
+            self.sw_cards_container.addWidget(card)
+
+    def _deploy_software(self, req: SoftwareRequirement):
+        if not req.resolved_package_path:
+            QMessageBox.warning(self, "Paket Bulunamadı", f"{req.name} için yüklenecek paket dosyası mevcut değil!")
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Yazılım Güncelleme Onayı",
+            f"'{req.name}' yazılımı hedef cihaza yüklenecektir.\n\n"
+            f"Paket: {req.resolved_package_path}\n"
+            f"Hedef Dizin: {req.target_install_path}\n\n"
+            "İşlemi başlatmak istiyor musunuz?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
+        self.console.append_log(f"{req.name} kurulumu başlatılıyor...", "system")
+        success, msg = self.adapter.deploy_package(
+            local_package_path=req.resolved_package_path,
+            target_install_path=req.target_install_path,
+            service_name=req.service_name
+        )
+
+        if success:
+            self.console.append_log(f"KURULUM BAŞARILI: {msg}", "info")
+            QMessageBox.information(self, "Başarılı", f"{req.name} başarıyla güncellendi!")
+            self._check_installed_versions()
+        else:
+            self.console.append_log(f"KURULUM HATASI: {msg}", "error")
+            QMessageBox.critical(self, "Hata", f"Yazılım yüklenirken hata oluştu:\n{msg}")
+
+    def _apply_configuration(self):
+        if not self.adapter or not self.profile:
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Konfigürasyon Uygulama Onayı",
+            f"'{self.profile.name}' ayarları hedef cihaza basılacak:\n\n"
+            f"Hedef Dosya: {self.profile.target_device.remote_config_path}\n\n"
+            "Mevcut ayarlar güncellensin mi?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
+        self.console.append_log("Konfigürasyon hedefe aktarılıyor...", "info")
+        success, msg = self.adapter.apply_configuration(
+            config_content=self.profile.baseline_config_content,
+            remote_config_path=self.profile.target_device.remote_config_path
+        )
+
+        if success:
+            self.lbl_cfg_status.setText("✓ Uygulandı")
+            self.lbl_cfg_status.setProperty("class", "PillBadge PillSuccess")
+            self.console.append_log(f"KONFİGÜRASYON UYGULANDI: {msg}", "info")
+            self.btn_complete_stage2.setEnabled(True)
+            self.lbl_init_summary.setText("<span style='color:#34d399;'>✓ Sistem hazır.</span>")
+        else:
+            self.lbl_cfg_status.setText("Hata")
+            self.lbl_cfg_status.setProperty("class", "PillBadge PillDanger")
+            self.console.append_log(f"HATA: {msg}", "error")
+
+        self.lbl_cfg_status.style().unpolish(self.lbl_cfg_status)
+        self.lbl_cfg_status.style().polish(self.lbl_cfg_status)
+
+    def _on_complete_stage2(self):
+        reply = QMessageBox.question(
+            self,
+            "Faaliyeti Başlat",
+            "Tüm kontroller tamamlandı ve servisler hazırlandı.\n\n"
+            "Faaliyet resmen başlatılsın ve 3. Aşamaya geçilsin mi?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+        if reply == QMessageBox.Yes:
+            self.console.append_log("2. AŞAMA TAMAMLANDI.", "system")
+            self.stage_completed.emit(self.adapter)
