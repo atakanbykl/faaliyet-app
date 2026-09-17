@@ -293,6 +293,30 @@ QCheckBox::indicator:checked {
 }
 
 /* ===================================================
+   RADYO BUTONLARI (QRadioButton)
+   =================================================== */
+QRadioButton {
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 500;
+    spacing: 8px;
+}
+QRadioButton::indicator {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #334155;
+    border-radius: 9px;
+    background-color: #0b1120;
+}
+QRadioButton::indicator:hover {
+    border-color: #3b82f6;
+}
+QRadioButton::indicator:checked {
+    background-color: #2563eb;
+    border-color: #60a5fa;
+}
+
+/* ===================================================
    MODERN HAP ROZETLER (PILL BADGES)
    =================================================== */
 QLabel.PillBadge {

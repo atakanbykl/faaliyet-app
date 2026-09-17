@@ -72,25 +72,35 @@ class Stage2FieldInitWidget(QWidget):
         c_box = QVBoxLayout(conn_card)
         c_box.setSpacing(12)
 
+        mode_header = QHBoxLayout()
         lbl_s1 = QLabel("🔌 Cihaz Bağlantı Modu")
         lbl_s1.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
-        c_box.addWidget(lbl_s1)
+        mode_header.addWidget(lbl_s1)
+        mode_header.addStretch()
+
+        self.lbl_platform_detected = QLabel()
+        self.lbl_platform_detected.setProperty("class", "PillBadge")
+        mode_header.addWidget(self.lbl_platform_detected)
+        c_box.addLayout(mode_header)
 
         mode_row = QHBoxLayout()
         self.mode_group = QButtonGroup(self)
-        self.radio_ssh = QRadioButton("Windows'tan Uzak SSH")
-        self.radio_local = QRadioButton("Linux Üzerinde Yerel")
+        self.radio_ssh = QRadioButton("🌐 Uzak SSH (Windows Destek Bilgisayarı)")
+        self.radio_local = QRadioButton("⚡ Doğrudan Yerel (Linux Saha Cihazı)")
         self.mode_group.addButton(self.radio_ssh)
         self.mode_group.addButton(self.radio_local)
 
-        if sys.platform != "win32":
-            self.radio_local.setChecked(True)
-        else:
-            self.radio_ssh.setChecked(True)
+        self.radio_ssh.toggled.connect(self._on_connection_mode_changed)
+        self.radio_local.toggled.connect(self._on_connection_mode_changed)
 
         mode_row.addWidget(self.radio_ssh)
         mode_row.addWidget(self.radio_local)
         c_box.addLayout(mode_row)
+
+        self.lbl_mode_hint = QLabel()
+        self.lbl_mode_hint.setStyleSheet("color: #94a3b8; font-size: 12px; line-height: 1.3;")
+        self.lbl_mode_hint.setWordWrap(True)
+        c_box.addWidget(self.lbl_mode_hint)
 
         test_row = QHBoxLayout()
         self.btn_test_conn = TouchButton("Bağlantıyı Doğrula", variant="primary")
@@ -103,6 +113,8 @@ class Stage2FieldInitWidget(QWidget):
         test_row.addWidget(self.lbl_conn_status)
         test_row.addStretch()
         c_box.addLayout(test_row)
+
+        self._apply_platform_default_mode()
         l_layout.addWidget(conn_card)
 
         # 2. KART: Kurulu Yazılım Sürüm Denetimi
@@ -181,11 +193,56 @@ class Stage2FieldInitWidget(QWidget):
 
         main_layout.addLayout(bottom_bar)
 
+    def _apply_platform_default_mode(self):
+        """Çalışılan işletim sistemine göre bağlantı modunu önden seçer (kullanıcı elle değiştirebilir)."""
+        is_linux = sys.platform.startswith("linux")
+        is_win = sys.platform.startswith("win")
+
+        if is_linux:
+            self.radio_local.setChecked(True)
+            self.lbl_platform_detected.setText("🐧 Linux Ortamı Algılandı")
+            self.lbl_platform_detected.setProperty("class", "PillBadge PillSuccess")
+            self.lbl_mode_hint.setText(
+                "💡 <b>Linux ortamı algılandı:</b> Uygulama doğrudan saha cihazında çalıştığı için "
+                "<b>'Doğrudan Yerel'</b> modu önden seçildi (dilediğinizde yukarıdan Uzak SSH'a geçebilirsiniz)."
+            )
+        elif is_win:
+            self.radio_ssh.setChecked(True)
+            self.lbl_platform_detected.setText("🪟 Windows Ortamı Algılandı")
+            self.lbl_platform_detected.setProperty("class", "PillBadge PillInfo")
+            self.lbl_mode_hint.setText(
+                "💡 <b>Windows ortamı algılandı:</b> Destek bilgisayarından sahaya bağlanıldığı için "
+                "<b>'Uzak SSH'</b> modu önden seçildi (dilediğinizde yukarıdan Yerel moda geçebilirsiniz)."
+            )
+        else:
+            self.radio_ssh.setChecked(True)
+            self.lbl_platform_detected.setText(f"💻 {sys.platform} Algılandı")
+            self.lbl_platform_detected.setProperty("class", "PillBadge PillMuted")
+            self.lbl_mode_hint.setText(
+                "💡 Uzak SSH modu önden seçildi (dilediğinizde elle değiştirebilirsiniz)."
+            )
+
+        self.lbl_platform_detected.style().unpolish(self.lbl_platform_detected)
+        self.lbl_platform_detected.style().polish(self.lbl_platform_detected)
+
+    def _on_connection_mode_changed(self, checked: bool):
+        if not checked:
+            return
+        is_local = self.radio_local.isChecked()
+        mode_str = "Doğrudan Yerel Linux" if is_local else "Uzak SSH Bağlantısı"
+        self.lbl_conn_status.setText("Test Edilmedi")
+        self.lbl_conn_status.setProperty("class", "PillBadge PillWarning")
+        self.lbl_conn_status.style().unpolish(self.lbl_conn_status)
+        self.lbl_conn_status.style().polish(self.lbl_conn_status)
+        if hasattr(self, "console"):
+            self.console.append_log(f"Bağlantı modu değiştirildi: {mode_str}", "system")
+
     def load_session(self, profile: LocationProfile):
         self.profile = profile
         self.info_lbl.setText(f"Aktif Lokasyon: <b>{profile.name}</b>  •  Hedef: {profile.target_device.host}")
         self.lbl_cfg_target.setText(f"Hedef Dosya: <code>{profile.target_device.remote_config_path}</code>")
         self.console.append_log(f"2. Aşama Başlatıldı. Hedef: {profile.target_device.host}", "system")
+        self._apply_platform_default_mode()
 
     def _get_active_adapter(self) -> BaseExecutionAdapter:
         if self.radio_local.isChecked():

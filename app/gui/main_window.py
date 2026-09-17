@@ -4,6 +4,7 @@ Sleek Segmented Stepper, modern breadcrumb ve reaktif sayfa geçişleri.
 """
 
 from __future__ import annotations
+import platform
 import sys
 from typing import Optional
 
@@ -174,9 +175,35 @@ class MainWindow(QMainWindow):
 
         info_row.addStretch()
 
+        # 1. İşletim Sistemi Gösterge Kutucuğu (OS Detection Badge)
+        os_sys = platform.system()
+        if os_sys == "Windows":
+            os_label = "🪟 Windows OS"
+            os_pill = "PillBadge PillInfo"
+            os_tooltip = f"İşletim Sistemi: Windows {platform.release()} ({platform.machine()})\nDestek Bilgisayarı Modu (Uzak SSH Bağlantısı Varsayılan)"
+        elif os_sys == "Linux":
+            os_label = "🐧 Linux OS"
+            os_pill = "PillBadge PillSuccess"
+            os_tooltip = f"İşletim Sistemi: Linux {platform.release()} ({platform.machine()})\nSaha Cihazı Modu (Doğrudan Yerel Çalıştırma Varsayılan)"
+        elif os_sys == "Darwin":
+            os_label = "🍎 macOS"
+            os_pill = "PillBadge PillMuted"
+            os_tooltip = f"İşletim Sistemi: macOS {platform.release()} ({platform.machine()})"
+        else:
+            os_label = f"💻 {os_sys}"
+            os_pill = "PillBadge PillMuted"
+            os_tooltip = f"İşletim Sistemi: {os_sys} {platform.release()}"
+
+        self.lbl_os_badge = QLabel(os_label)
+        self.lbl_os_badge.setProperty("class", os_pill)
+        self.lbl_os_badge.setToolTip(os_tooltip)
+        info_row.addWidget(self.lbl_os_badge)
+
+        # 2. Taşınabilir USB / Yerel Disk Durumu
         is_usb = AppPaths.is_running_from_usb()
         self.lbl_storage_badge = QLabel("USB Modu" if is_usb else "Yerel Disk")
         self.lbl_storage_badge.setProperty("class", "PillBadge PillInfo" if is_usb else "PillBadge PillWarning")
+        self.lbl_storage_badge.setToolTip("Taşınabilir USB Bellek üzerinden çalışıyor" if is_usb else "Bilgisayarın yerel diskinden çalışıyor")
         info_row.addWidget(self.lbl_storage_badge)
 
         tb_layout.addLayout(info_row)
