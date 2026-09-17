@@ -50,11 +50,16 @@ class AppPaths:
         return d
 
     @classmethod
-    def get_packages_dir(cls) -> Path:
-        """Lokasyona özel yedek yazılım paketleri: [ROOT]/data/packages"""
-        d = cls.get_data_dir() / "packages"
+    def get_softwares_dir(cls) -> Path:
+        """Yazılım paketleri ve ikili dağıtımlar klasörü: [ROOT]/softwares"""
+        d = cls.get_app_root() / "softwares"
         d.mkdir(parents=True, exist_ok=True)
         return d
+
+    @classmethod
+    def get_packages_dir(cls) -> Path:
+        """Yazılım paketleri havuzu: [ROOT]/softwares (Geriye uyumluluk takma adı)"""
+        return cls.get_softwares_dir()
 
     @classmethod
     def get_missions_dir(cls) -> Path:

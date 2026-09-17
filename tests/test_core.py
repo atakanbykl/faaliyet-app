@@ -3,8 +3,14 @@ FieldOps Assistant - Çekirdek Modül Testleri
 """
 
 import json
+import sys
 import unittest
 from pathlib import Path
+
+# Proje kökünü sys.path'e ekle
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from app.core.app_paths import AppPaths
 from app.core.asset_manager import SoftwareAssetManager
@@ -21,6 +27,10 @@ def test_app_paths(tmp_path):
 
     data_dir = AppPaths.get_data_dir()
     assert data_dir.exists()
+
+    softwares_dir = AppPaths.get_softwares_dir()
+    assert softwares_dir.exists()
+    assert AppPaths.get_packages_dir() == softwares_dir
 
 
 def test_profile_manager(tmp_path):
@@ -70,7 +80,7 @@ def test_software_asset_manager(tmp_path):
 
     # Harici paket simülasyonu
     external_file = tmp_path / "external_test_app.tar.gz"
-    external_file.write_bytes(b"TEST CONTENT")
+    external_file.write_bytes(b"TEST CONTENT" * 50)
 
     registered = sm.register_external_package("loc_test", req, external_file, copy_to_storage=True)
     assert registered.exists()
@@ -80,6 +90,38 @@ def test_software_asset_manager(tmp_path):
     found_now, path_now = sm.check_requirement("loc_test", req)
     assert found_now
     assert path_now.exists()
+
+    # scan_available_softwares testi
+    softwares = sm.scan_available_softwares()
+    assert len(softwares) >= 1
+    found_item = next((s for s in softwares if s.primary_package == "test_app_v1.0.0.tar.gz"), None)
+    assert found_item is not None
+    assert found_item.version_name == "v1.0.0"
+    assert not found_item.is_empty
+    assert "B" in found_item.formatted_size or "KB" in found_item.formatted_size
+    assert found_item.extension == ".tar.gz"
+
+    # Boş versiyon klasörü testi (Uyarı bayrağı kontrolü)
+    empty_v_dir = tmp_path / "main_app" / "v2.0.0"
+    empty_v_dir.mkdir(parents=True, exist_ok=True)
+    (empty_v_dir / ".gitkeep").write_text("# gitkeep only\n")
+
+    softwares_after = sm.scan_available_softwares()
+    empty_item = next((s for s in softwares_after if s.version_name == "v2.0.0"), None)
+    assert empty_item is not None
+    assert empty_item.is_empty
+    assert empty_item.file_count == 0
+    assert empty_item.formatted_size == "0 B"
+
+    # Gruplandırılmış tarama testi (Uygulama bazlı ağaç yapısı)
+    grouped = sm.scan_softwares_grouped()
+    assert "main_app" in grouped
+    assert len(grouped["main_app"]) == 2  # v1.0.0 (dolu) ve v2.0.0 (boş)
+
+    # Boyut biçimlendirme testi
+    assert sm.format_file_size(500) == "500 B"
+    assert sm.format_file_size(2048) == "2.0 KB"
+    assert sm.format_file_size(1024 * 1024 * 5) == "5.0 MB"
 
 
 def test_config_diff_engine():
@@ -140,4 +182,26 @@ def test_mission_manager_saved_sessions(tmp_path):
     assert loaded.operator_name == "Ahmet Mühendis"
     assert loaded.current_stage == 2
     assert loaded.stage1_completed
+
+
+if __name__ == "__main__":
+    import tempfile
+    test_functions = [
+        test_app_paths,
+        test_profile_manager,
+        test_software_asset_manager,
+        test_config_diff_engine,
+        test_local_adapter_compression,
+        test_mission_manager_saved_sessions,
+    ]
+    for fn in test_functions:
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td)
+            if "tmp_path" in fn.__code__.co_varnames:
+                fn(p)
+            else:
+                fn()
+            print(f"[OK] {fn.__name__} passed")
+    print("All core tests passed successfully!")
+
 

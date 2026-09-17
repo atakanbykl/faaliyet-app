@@ -115,7 +115,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("FieldOps Assistant - Saha Operasyon & Konfigürasyon Yöneticisi")
-        self.resize(1320, 880)
+        self.resize(1380, 890)
+        self.setMinimumSize(1240, 780)
         self.setStyleSheet(FIELD_DARK_THEME)
 
         self.profile_manager = ProfileManager()
@@ -230,7 +231,7 @@ class MainWindow(QMainWindow):
         self.stacked_widget = QStackedWidget()
 
         # Sayfa 0: Karşılama Ekranı
-        self.page_welcome = MissionSelectionWidget(self.profile_manager, self.mission_manager)
+        self.page_welcome = MissionSelectionWidget(self.profile_manager, self.mission_manager, self.asset_manager)
         self.page_welcome.start_new_mission.connect(self._on_start_new_mission)
         self.page_welcome.resume_mission.connect(self._on_resume_mission)
         self.stacked_widget.addWidget(self.page_welcome)

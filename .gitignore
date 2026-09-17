@@ -112,9 +112,13 @@ logs/
 *.pigz
 *.gz
 
-# Ancak örnek yazılım paketlerini koru
+# Ancak örnek yazılım paketlerini ve dizin yapılarını koru
 !data/packages/**
 !data/packages/**/.gitkeep
+!softwares/.gitkeep
+!softwares/**/.gitkeep
+!softwares/radar_control/v2.4.0/**
+!softwares/yardimci_araclar/v1.0.0/**
 
 # --- Paketleme & PyInstaller / Dağıtım Çıktıları ---
 *.spec

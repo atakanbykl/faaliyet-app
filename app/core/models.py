@@ -33,6 +33,24 @@ class SoftwareRequirement:
 
 
 @dataclass
+class StoredSoftwareInfo:
+    """softwares/<app_name>/<version>/ hiyerarşisinde tespit edilen yazılım sürümü metaverisi."""
+    app_name: str                                  # Uygulama adı (örn: radar_control, yardimci_araclar)
+    version_name: str                              # Versiyon adı (örn: v2.4.0, v2.5.0)
+    folder_path: str                               # Versiyon klasörünün mutlak yolu
+    relative_path: str                             # Örn: radar_control/v2.4.0
+    is_empty: bool                                 # Klasör boşsa veya sadece .gitkeep varsa True
+    files: List[str] = field(default_factory=list) # İçindeki paket/dosya isimleri
+    file_count: int = 0                            # Dosya sayısı
+    total_size_bytes: int = 0                      # Toplam boyut
+    formatted_size: str = "0 B"                    # Okunabilir boyut
+    modified_time_str: str = ""                    # Son değiştirilme zamanı
+    primary_package: Optional[str] = None          # İlk/ana arşiv dosyası (örn: radar_control_v2.4.0_x86_64.tar.gz)
+    extension: str = ""                            # Ana paket uzantısı (.tar.gz vb.)
+    location_id: Optional[str] = None              # Varsa eşleşen lokasyon kimliği
+
+
+@dataclass
 class TargetDeviceConfig:
     """Hedef saha cihazı bağlantı parametreleri."""
     host: str = "192.168.1.100"
