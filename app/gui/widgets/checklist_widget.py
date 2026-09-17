@@ -147,6 +147,13 @@ class ChecklistWidget(QWidget):
         select_all_btn.clicked.connect(self.select_all)
         top_bar.addWidget(select_all_btn)
 
+        select_mandatory_btn = TouchButton("⚡ Zorunluları Seç", variant="ghost")
+        select_mandatory_btn.setFixedHeight(32)
+        select_mandatory_btn.setStyleSheet("font-size: 12px; padding: 2px 12px; min-height: 30px; color: #fbbf24;")
+        select_mandatory_btn.setToolTip("Yalnızca zorunlu işaretli malzemeleri topluca onaylar")
+        select_mandatory_btn.clicked.connect(self.select_all_mandatory)
+        top_bar.addWidget(select_mandatory_btn)
+
         clear_all_btn = TouchButton("Temizle", variant="ghost")
         clear_all_btn.setFixedHeight(32)
         clear_all_btn.setStyleSheet("font-size: 12px; padding: 2px 12px; min-height: 30px;")
@@ -210,3 +217,15 @@ class ChecklistWidget(QWidget):
 
     def are_all_mandatory_checked(self) -> bool:
         return all(w.is_checked() for w in self.item_widgets if w.item.is_mandatory)
+
+    def select_all_mandatory(self):
+        """Yalnızca zorunlu olan ekipmanları işaretler."""
+        for w in self.item_widgets:
+            if w.item.is_mandatory:
+                w.set_checked(True)
+        self._update_counter()
+        self.checklist_updated.emit()
+
+    def get_missing_mandatory_items(self) -> List[EquipmentItem]:
+        """İşaretlenmemiş zorunlu ekipmanların listesini döner."""
+        return [w.item for w in self.item_widgets if w.item.is_mandatory and not w.is_checked()]

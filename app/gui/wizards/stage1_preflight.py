@@ -10,7 +10,7 @@ from typing import Optional
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QLineEdit, QFileDialog, QMessageBox, QFrame, QSizePolicy
+    QLineEdit, QFileDialog, QMessageBox, QFrame, QSizePolicy, QCheckBox
 )
 
 from app.core.asset_manager import SoftwareAssetManager
@@ -167,6 +167,22 @@ class Stage1PreflightWidget(QWidget):
         bottom_bar.addWidget(self.status_summary_lbl)
         bottom_bar.addStretch()
 
+        self.chk_force_equipment = QCheckBox("⚠️ Zorunlu Ekipmanı Yoksay (Force Geçiş)")
+        self.chk_force_equipment.setStyleSheet("""
+            QCheckBox {
+                color: #fbbf24;
+                font-size: 13px;
+                font-weight: 600;
+                spacing: 8px;
+            }
+            QCheckBox:hover {
+                color: #f59e0b;
+            }
+        """)
+        self.chk_force_equipment.setToolTip("Acil durumlarda eksik zorunlu ekipman olsa dahi operatör onayıyla faaliyete devam etmeyi sağlar")
+        self.chk_force_equipment.toggled.connect(self._update_readiness)
+        bottom_bar.addWidget(self.chk_force_equipment)
+
         self.complete_btn = TouchButton("Hazırlığı Tamamla ve Yola Çık  ➔", variant="primary")
         self.complete_btn.setMinimumWidth(320)
         self.complete_btn.clicked.connect(self._on_complete_clicked)
@@ -304,6 +320,7 @@ class Stage1PreflightWidget(QWidget):
         if not self.current_profile:
             return
 
+        self.chk_force_equipment.setChecked(False)
         self.checklist_widget = ChecklistWidget(self.current_profile.equipment_checklist)
         self.checklist_widget.checklist_updated.connect(self._update_readiness)
         self.equip_container.addWidget(self.checklist_widget)
@@ -318,27 +335,56 @@ class Stage1PreflightWidget(QWidget):
             for req in self.current_profile.software_requirements
         )
         checklist_ok = self.checklist_widget.are_all_mandatory_checked() if self.checklist_widget else False
+        force_active = self.chk_force_equipment.isChecked()
 
-        if all_pkgs_ok and checklist_ok:
-            self.status_summary_lbl.setText("<span style='color: #34d399;'>✓ Tüm hazırlıklar tamamlandı.</span>")
-            self.complete_btn.setEnabled(True)
-            self.complete_btn.set_variant("success")
+        if all_pkgs_ok and (checklist_ok or force_active):
+            if checklist_ok:
+                self.status_summary_lbl.setText("<span style='color: #34d399;'>✓ Tüm hazırlıklar tamamlandı.</span>")
+                self.complete_btn.setText("Hazırlığı Tamamla ve Yola Çık  ➔")
+                self.complete_btn.setEnabled(True)
+                self.complete_btn.set_variant("success")
+            else:
+                missing = self.checklist_widget.get_missing_mandatory_items() if self.checklist_widget else []
+                self.status_summary_lbl.setText(f"<span style='color: #fbbf24;'>⚠️ Force Aktif: {len(missing)} zorunlu malzeme işaretlenmedi</span>")
+                self.complete_btn.setText("⚠️ Eksik Ekipmanla Yine de Yola Çık  ➔")
+                self.complete_btn.setEnabled(True)
+                self.complete_btn.set_variant("warning")
         else:
             reasons = []
             if not all_pkgs_ok:
                 reasons.append("Eksik yazılım paketleri var")
-            if not checklist_ok:
+            if not checklist_ok and not force_active:
                 reasons.append("İşaretlenmemiş zorunlu ekipmanlar var")
             self.status_summary_lbl.setText(f"<span style='color: #fbbf24;'>Bekleyen: {', '.join(reasons)}</span>")
+            self.complete_btn.setText("Hazırlığı Tamamla ve Yola Çık  ➔")
             self.complete_btn.setEnabled(False)
             self.complete_btn.set_variant("primary")
 
     def _on_complete_clicked(self):
+        if not self.current_profile:
+            return
+
+        checklist_ok = self.checklist_widget.are_all_mandatory_checked() if self.checklist_widget else False
+        if not checklist_ok:
+            missing = self.checklist_widget.get_missing_mandatory_items() if self.checklist_widget else []
+            missing_text = "\n• " + "\n• ".join([item.name for item in missing])
+            reply = QMessageBox.warning(
+                self,
+                "Zorunlu Ekipman Eksik (Force Geçiş)",
+                f"DİKKAT: Aşağıdaki zorunlu malzemeler işaretlenmedi:{missing_text}\n\n"
+                "Bu malzemeler eksik olarak sahaya çıkmak istediğinizden emin misiniz?\n"
+                "(Tüm sorumluluk saha operatörüne aittir.)",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                return
+
         op_name = self.op_input.text().strip() or "Saha_Operatoru"
         reply = QMessageBox.question(
             self,
             "1. Aşamayı Tamamla",
-            f"'{self.current_profile.name}' hazırlıkları tamamlandı.\n"
+            f"'{self.current_profile.name}' hazırlıkları onaylandı.\n"
             "Faaliyet lokasyonuna yola çıkılıyor mu?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes
