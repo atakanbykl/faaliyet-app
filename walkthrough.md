@@ -95,8 +95,6 @@ FieldOps Assistant; saha görevlerinde kurum içi yazılım ve donanımların lo
 faaliyet-app/
 ├── FieldOps_Windows.bat        # Windows için tek tıkla başlatıcı
 ├── FieldOps_Linux.sh           # Linux x86_64 için başlatıcı
-├── setup_env.bat               # Windows sanal ortam ve bağımlılık kurulum scripti
-├── setup_env.sh                # Linux sanal ortam ve bağımlılık kurulum scripti
 ├── requirements.txt            # Python kütüphane bağımlılıkları
 ├── walkthrough.md              # Bu dosya (tüm mimari ve operasyon rehberi)
 ├── README.md                   # Proje tanıtım ve genel özet dokümanı
@@ -145,17 +143,14 @@ faaliyet-app/
 
 ### 1. Sıfırdan Yeni Bir Windows Bilgisayarda:
 1. Projeyi bir klasöre kopyalayın veya klonlayın.
-2. `setup_env.bat` dosyasına çift tıklayarak Python sanal ortamını ve gerekli kütüphaneleri otomatik yükletin.
+2. Gerekli bağımlılıkları yükleyin: `pip install -r requirements.txt`
 3. Uygulamayı başlatmak için `FieldOps_Windows.bat` dosyasına çift tıklayın (veya `python app\main.py`).
 
 ### 2. Sıfırdan Yeni Bir Linux Makinesinde:
-1. Proje dizinine geçin:
+1. Proje dizinine geçin ve bağımlılıkları yükleyin:
    ```bash
-   chmod +x setup_env.sh FieldOps_Linux.sh
-   ./setup_env.sh
-   ```
-2. Uygulamayı başlatın:
-   ```bash
+   pip install -r requirements.txt
+   chmod +x FieldOps_Linux.sh
    ./FieldOps_Linux.sh
    ```
 

@@ -14,14 +14,20 @@ if exist "bin\windows\fieldops.exe" (
     exit /b 0
 )
 
-REM 2. Sanal ortam (.venv) kontrolu
+REM 2. Sanal ortam kontrolu [.venv veya venv]
 if exist ".venv\Scripts\python.exe" (
-    echo [BILGI] Sanal ortam (.venv) uzerinden baslatiliyor...
+    echo [BILGI] Sanal ortam [.venv] uzerinden baslatiliyor...
     ".venv\Scripts\python.exe" app\main.py
     exit /b 0
 )
 
-REM 3. Sistemde Python kontrolu
+if exist "venv\Scripts\python.exe" (
+    echo [BILGI] Sanal ortam [venv] uzerinden baslatiliyor...
+    "venv\Scripts\python.exe" app\main.py
+    exit /b 0
+)
+
+REM 3. Sistem Python kontrolu
 where python >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     echo [BILGI] Sistem Python uzerinden baslatiliyor...
@@ -29,7 +35,16 @@ if %ERRORLEVEL% equ 0 (
     exit /b 0
 )
 
-echo [HATA] Sistemde calistirilabilir Python ortami bulunamadi!
-echo Lutfen once "setup_env.bat" dosyasini calistirarak ortami hazirlayiniz.
-pause
+where py >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    echo [BILGI] Python Launcher uzerinden baslatiliyor...
+    py app\main.py
+    exit /b 0
+)
 
+echo.
+echo [HATA] Sistemde calistirilabilir Python ortami bulunamadi!
+echo Lutfen sisteminize Python yukleyip gereksinimleri kurunuz:
+echo   pip install -r requirements.txt
+echo.
+pause

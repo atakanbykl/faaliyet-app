@@ -21,13 +21,18 @@ if [ -f ".venv/bin/python" ]; then
     exec .venv/bin/python app/main.py
 fi
 
-# 3. Sistemde python3 kontrolü
-if command -v python3 &>/dev/null; then
+# 3. Sistemde python3 / python kontrolü
+if command -v python3 &>/dev/null && python3 --version &>/dev/null; then
     echo "[BILGI] python3 uzerinden baslatiliyor..."
     exec python3 app/main.py
 fi
 
+if command -v python &>/dev/null && python --version &>/dev/null; then
+    echo "[BILGI] python uzerinden baslatiliyor..."
+    exec python app/main.py
+fi
+
 echo "[HATA] Sistemde calistirilabilir Python ortami bulunamadi!"
-echo "Lütfen önce ./setup_env.sh calistirarak ortami hazirlayiniz."
+echo "Lütfen sisteminize python3 yukleyip gereksinimleri kurunuz (pip install -r requirements.txt)."
 exit 1
 

@@ -7,13 +7,12 @@ Bu kılavuz, saha personelinin sahaya çıkıştan görev bitimine kadar **Field
 ## 🧭 Hızlı Başlangıç
 
 ### Windows Bilgisayarda (Destek Laptopu):
-1. `FieldOps_Windows.bat` dosyasına çift tıklayın.
-2. Eğer ilk defa yeni bir bilgisayarda çalıştırıyorsanız, önce `setup_env.bat` dosyasını çalıştırarak gerekli kütüphanelerin otomatik yüklenmesini sağlayabilirsiniz.
+- `FieldOps_Windows.bat` dosyasına çift tıklayın (veya terminalde `python app/main.py`).
 
 ### Linux Makinesinde (Doğrudan Cihaz):
-1. Terminalde proje kök dizininde:
+- Terminalde proje kök dizininde:
    ```bash
-   chmod +x FieldOps_Linux.sh setup_env.sh
+   chmod +x FieldOps_Linux.sh
    ./FieldOps_Linux.sh
    ```
 
