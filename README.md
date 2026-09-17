@@ -1,97 +1,89 @@
 # FieldOps Assistant - Saha Operasyon & Konfigürasyon Yöneticisi
 
-FieldOps Assistant; saha görevlerinde kurum içi yazılımın lokasyon bazlı konfigürasyonlarını yönetmek, saha personelini adım adım yönlendirmek ve faaliyet aşamalarındaki otomatik işleri (bağlantı, konfigürasyon yükleme, 20-30 GB log toplama, sağlık kontrolleri ve ofiste görsel konfigürasyon kıyaslama) yürütmek üzere geliştirilmiş taşınabilir bir masaüstü uygulamasıdır.
+FieldOps Assistant; saha görevlerinde kurum içi yazılım ve donanımların lokasyon bazlı konfigürasyonlarını yönetmek, saha personelini adım adım yönlendirmek, çift modlu (Windows SSH / Linux Doğrudan Yerel) güvenli bağlantı sağlamak, 20-30 GB operasyon loglarını yerinde sıkıştırarak toplamak ve ofiste görsel konfigürasyon kıyaslama (Diff Tool) ve tek tıkla baseline güncellemesi yapmak üzere geliştirilmiş taşınabilir bir masaüstü uygulamasıdır.
+
+---
+
+## 📚 Dokümantasyon & Detaylı Rehberler
+- **[walkthrough.md](file:///walkthrough.md)**: Projenin mimari yapısı, geliştirilen tüm yetenekler, dizin standartları ve test sonuçları.
+- **[docs/OPERATOR_GUIDE.md](file:///docs/OPERATOR_GUIDE.md)**: Sahada görev yapan personel için adım adım operasyon ve acil durum rehberi.
 
 ---
 
 ## 🚀 Öne Çıkan Yetenekler
 
-1. **Bağımsız ve Taşınabilir (Portable)**:
-   - Sabit sürücü harflerine veya yollara bağlı değildir.
-   - Doğrudan USB bellek üzerinden (exFAT önerilir) çalıştırılabilir.
-   - İstenirse USB'den Windows veya Linux bilgisayarın yerel diskine kopyalanıp çalıştırılabilir.
-   - Yerel diskte çalışıldığında, faaliyet sonundaki toplanan log ve raporları takılı olan USB belleğe tek tıkla geri senkronize eder.
-
-2. **Çift Modlu Çalıştırma Motoru (Local / SSH)**:
+1. **Taşınabilir & Çift Modlu Çalıştırma Motoru**:
    - **Windows Destek Bilgisayarı Modu**: Cihaza SSH ve SFTP üzerinden bağlanarak uzaktan komut yürütür, yazılım paketler ve log çeker.
    - **Linux Doğrudan Yerel Mod**: Uygulama doğrudan ana Linux makinesinde çalıştırıldığında sıfır ağ gecikmesiyle yerel terminal ve dosya sistemi üzerinden işlem yapar.
+   - **Akıllı Platform Algılama**: Çalışılan işletim sistemini algılayarak Aşama 2 bağlantı modunu otomatik ön seçer.
 
-3. **20-30 GB Yüksek Hacimli Log Yönetimi**:
-   - Hedef cihazda çok çekirdekli (`tar` / `pigz`) sıkıştırma yaparak boyutu küçültür.
-   - Parçalı ve akışlı aktarım (streaming transfer) ile kilitlenmeden aktarır.
+2. **Yazılım & Versiyon Havuzu (`softwares/`)**:
+   - `softwares/<uygulama>/<versiyon>/` klasör hiyerarşisi taranarak ana ve yardımcı araçlar listelenir.
+   - **Boş Versiyon Uyarısı**: İçi boş olan sürüm klasörleri sarı `⚠️ Paket Yok` rozetiyle uyarılır.
+   - **Açılır / Kapanır (Collapsible)**: Varsayılan olarak daraltılmış şık bir şerit halinde durur, tıklandığında genişler.
+   - **Tek Tıkla Klasörü Aç**: Versiyon klasörleri doğrudan dosya gezgininde açılabilir.
+
+3. **Görsel Lokasyon Profil Editörü (`+ Yeni` ve `✏️ Düzenle`)**:
+   - YAML dosyalarına elle müdahaleye gerek kalmadan hedef saha profilleri (IP, port, cihaz bilgisi, yazılımlar, malzemeler ve referans konfigürasyon) görsel modal üzerinden yönetilir.
+
+4. **Acil Durum Force Geçişi (`Zorunlu Ekipmanı Yoksay`)**:
+   - Zorunlu işaretli saha malzemelerinin eksik olduğu acil saha koşullarında, operatörün onay vererek sürece devam etmesini sağlar.
+
+5. **20-30 GB Yüksek Hacimli Log Yönetimi**:
+   - Hedef cihazda çok çekirdekli (`tar` / `pigz`) sıkıştırma yaparak log boyutunu küçültür.
    - SHA-256 sağlama toplamı (checksum) ile veri bütünlüğünü garanti eder.
 
-4. **3 Aşamalı Operasyonel Akış (SOP)**:
-   - **Aşama 1 (Yola Çıkış / Ön Hazırlık)**: Lokasyon seçimi, yedek yazılım paketlerinin otomatik taranması (bulunamazsa harici dosya seçici ile ekleme), konfigürasyon kontrolü ve ekipman kontrol listesi.
-   - **Aşama 2 (Faaliyet Başlangıcı)**: Cihaz bağlantı doğrulaması, sahadaki kurulu yazılımın sürüm denetimi, operatör onaylı sürüm güncelleme/dağıtımı, operatör onaylı konfigürasyon enjeksiyonu.
-   - **Aşama 3 (Faaliyet Sonu & Raporlama)**: Toplanma kontrolleri, 20-30 GB log paketleme, sahadaki aktif konfigürasyon snapshot'ı, USB senkronizasyonu ve **Yan Yana Görsel Kıyaslama (Diff Tool)** ile değişen ayarları ana referans profile tek tıkla aktarma.
-
-5. **Tablet & Dokunmatik Ekran Ergonomisi**:
-   - Minimum 48-52px dokunmatik hedefler.
-   - Eldivenli ve dokunmatik saha kullanımına uygun yüksek kontrastlı tema.
+6. **Görsel Konfigürasyon Kıyaslama (Diff Engine)**:
+   - Sahadan çekilen aktif konfigürasyon ile ofisteki referans konfigürasyonu yan yana görsel olarak karşılaştırır. Değişiklikler tek tıkla referans profile aktarılabilir.
 
 ---
 
 ## 📂 Dizin Yapısı
 
 ```
-fieldops_assistant/
-├── FieldOps_Windows.bat        # Windows için başlatıcı (çift tıkla açılır)
+faaliyet-app/
+├── FieldOps_Windows.bat        # Windows için tek tıkla başlatıcı
 ├── FieldOps_Linux.sh           # Linux x86_64 için başlatıcı
+├── setup_env.bat               # Windows sanal ortam ve bağımlılık kurulum scripti
+├── setup_env.sh                # Linux sanal ortam ve bağımlılık kurulum scripti
+├── requirements.txt            # Python kütüphane bağımlılıkları
+├── walkthrough.md              # Mimari, yetenekler ve doğrulama raporu
+├── README.md                   # Bu dosya
+├── docs/
+│   └── OPERATOR_GUIDE.md       # Saha operatörü kullanım kılavuzu
 ├── app/
-│   ├── main.py                 # Başlangıç noktası
+│   ├── main.py                 # Uygulama başlangıç noktası
 │   ├── core/                   # Dinamik yollar, modeller, profiller, diff motoru
-│   │   ├── app_paths.py        # USB tespiti ve bağımsız dizin çözümleme
-│   │   ├── models.py           # Lokasyon, yazılım ve görev modelleri
-│   │   ├── profile_manager.py  # YAML lokasyon profilleri ve baseline güncelleyici
-│   │   ├── asset_manager.py    # Yazılım paketleri otomatik/harici seçici
-│   │   ├── diff_engine.py      # Görsel ve metinsel fark analizi
-│   │   └── mission_context.py  # Görev oturumu ve kayıt defteri
-│   ├── adapters/               # Yerel ve uzak çalıştırma motorları
-│   │   ├── base_adapter.py     # Ortak arayüz
-│   │   ├── local_adapter.py    # Linux yerel subprocess ve tar işlemleri
-│   │   └── ssh_adapter.py      # Paramiko SSH/SFTP uzaktan yönetim
-│   └── gui/                    # PySide6 arayüzü
-│       ├── main_window.py      # Ana pencere ve 3 aşamalı sihirbaz
-│       ├── styles.py           # Dokunmatik ve tablet uyumlu QSS teması
-│       ├── widgets/            # Büyük butonlar, kontrol listesi, konsol, diff diyaloğu
-│       └── wizards/            # 1, 2 ve 3. aşama ekranları
-├── data/                       # Çalışma verileri (USB ile taşınan ortak alan)
+│   ├── adapters/               # Yerel (Linux) ve Uzak (SSH) adaptörleri
+│   └── gui/                    # Modern PySide6 koyu tema arayüzü
+├── data/
 │   ├── profiles/               # Lokasyon YAML tanımları
-│   ├── packages/               # Lokasyonlara ait yedek yazılım binary/paketleri
 │   └── missions/               # Sahada toplanan loglar ve görev özetleri
-├── packaging/
-│   ├── build_windows.py        # Windows tek tıkla PyInstaller derleme scripti
-│   └── build_linux.sh          # Linux PyInstaller derleme scripti
+├── softwares/                  # Yazılım ve versiyon hiyerarşisi
 └── tests/
-    └── test_core.py            # Çekirdek modül testleri
+    └── test_core.py            # Çekirdek test paketi
 ```
 
 ---
 
-## 🛠 Çalıştırma Talimatları
+## 🛠 Yeni Bir Ortamda Kurulum ve Çalıştırma
 
 ### Windows Ortamında:
-- Çift tıklayarak: `FieldOps_Windows.bat`
-- Veya terminalden:
-  ```bash
-  python app/main.py
-  ```
+1. İlk kurulum için `setup_env.bat` dosyasını çalıştırın (otomatik `.venv` oluşturup kütüphaneleri yükler ve testleri çalıştırır).
+2. Uygulamayı başlatmak için `FieldOps_Windows.bat` dosyasına çift tıklayın.
 
 ### Linux Ortamında:
-- Çift tıklayarak veya terminalden:
-  ```bash
-  chmod +x FieldOps_Linux.sh
-  ./FieldOps_Linux.sh
-  ```
+1. İlk kurulum için:
+   ```bash
+   chmod +x setup_env.sh FieldOps_Linux.sh
+   ./setup_env.sh
+   ```
+2. Uygulamayı başlatmak için:
+   ```bash
+   ./FieldOps_Linux.sh
+   ```
 
----
-
-## 📦 Kurulumsuz (.exe) Paketleme (Windows)
-
-USB içerisine python kurulu olmayan bilgisayarlarda çalışması için tek tıkla paketlemek için:
+### Testleri Çalıştırma:
 ```bash
-python packaging/build_windows.py
+python tests/test_core.py
 ```
-Derleme sonucunda `bin/windows/fieldops.exe` oluşturulacak ve `FieldOps_Windows.bat` doğrudan bu binary'yi çalıştıracaktır.
-

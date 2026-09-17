@@ -14,15 +14,22 @@ if exist "bin\windows\fieldops.exe" (
     exit /b 0
 )
 
-REM 2. Sistemde Python kontrolu
+REM 2. Sanal ortam (.venv) kontrolu
+if exist ".venv\Scripts\python.exe" (
+    echo [BILGI] Sanal ortam (.venv) uzerinden baslatiliyor...
+    ".venv\Scripts\python.exe" app\main.py
+    exit /b 0
+)
+
+REM 3. Sistemde Python kontrolu
 where python >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    echo [BILGI] Python uzerinden baslatiliyor...
+    echo [BILGI] Sistem Python uzerinden baslatiliyor...
     python app\main.py
     exit /b 0
 )
 
-echo [HATA] Sistemde ne derlenmis binary (bin\windows\fieldops.exe) ne de Python bulundu!
-echo Lutfen USB bellek icerisindeki bin klasorunu kontrol ediniz.
+echo [HATA] Sistemde calistirilabilir Python ortami bulunamadi!
+echo Lutfen once "setup_env.bat" dosyasini calistirarak ortami hazirlayiniz.
 pause
 

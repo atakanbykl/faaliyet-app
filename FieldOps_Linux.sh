@@ -15,12 +15,19 @@ if [ -f "bin/linux/fieldops.bin" ]; then
     exec "./bin/linux/fieldops.bin"
 fi
 
-# 2. Sistemde python3 kontrolu
+# 2. Sanal ortam (.venv) kontrolü
+if [ -f ".venv/bin/python" ]; then
+    echo "[BILGI] Sanal ortam (.venv) uzerinden baslatiliyor..."
+    exec .venv/bin/python app/main.py
+fi
+
+# 3. Sistemde python3 kontrolü
 if command -v python3 &>/dev/null; then
     echo "[BILGI] python3 uzerinden baslatiliyor..."
     exec python3 app/main.py
 fi
 
-echo "[HATA] Sistemde ne derlenmis binary (bin/linux/fieldops.bin) ne de python3 bulundu!"
+echo "[HATA] Sistemde calistirilabilir Python ortami bulunamadi!"
+echo "Lütfen önce ./setup_env.sh calistirarak ortami hazirlayiniz."
 exit 1
 
