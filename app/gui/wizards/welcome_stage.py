@@ -143,6 +143,10 @@ class MissionSelectionWidget(QWidget):
         self.lbl_stats.setStyleSheet("font-size: 11.5px; font-weight: 600; padding: 4px 12px;")
         h_layout.addWidget(self.lbl_stats)
 
+        # Başlığın pencere boyutuna göre dikeyde esnemesini engelle; içeriğinin doğal yüksekliğine fixle
+        header.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        header.setFixedHeight(header.sizeHint().height())
+
         content_layout.addWidget(header)
 
         # =========================================================================
@@ -408,6 +412,7 @@ class MissionSelectionWidget(QWidget):
         soft_layout.addWidget(self.soft_body)
 
         content_layout.addWidget(self.soft_card)
+        content_layout.addStretch(1)
 
         self.page_scroll_area.setWidget(self.scroll_content)
         root_layout.addWidget(self.page_scroll_area)
