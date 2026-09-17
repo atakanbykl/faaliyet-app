@@ -1,17 +1,20 @@
 """
 FieldOps Assistant - Modern Launchpad & Görev Başlatıcı (Welcome & Mission Selection)
-Üstte yan yana Yeni Faaliyet ve Kayıtlı Faaliyetler, altta tüm ekran genişliğine yayılan
-Hafızadaki Yazılımlar & Versiyonlar Ağacı.
+Dikey kaydırılabilir tekil ana alan (FieldOps Assistant dışındaki tüm alan), ince kontrol merkezi başlığı,
+dikine genişletilmiş yan yana Yeni Faaliyet ve Kayıtlı Faaliyetler kartları ve altta tam genişlikte
+Hafızadaki Yazılımlar & Versiyonlar ağacı.
 """
 
 from __future__ import annotations
+from pathlib import Path
 from typing import List, Optional
 
 from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QLineEdit, QFrame, QScrollArea, QMessageBox, QDialog
+    QLineEdit, QFrame, QScrollArea, QMessageBox, QDialog,
+    QSizePolicy, QPushButton
 )
 
 from app.core.asset_manager import SoftwareAssetManager
@@ -20,6 +23,39 @@ from app.core.models import LocationProfile, MissionSession, StoredSoftwareInfo
 from app.core.profile_manager import ProfileManager
 from app.gui.widgets.mission_card import MissionCardWidget
 from app.gui.widgets.touch_button import TouchButton
+
+
+class CollapsibleCardFrame(QFrame):
+    """Genişletilebilir / daraltılabilir kart çerçevesi. Daraltılmış durumdayken herhangi bir yerine tıklanırsa genişletilir."""
+    def __init__(self, is_expanded_fn, toggle_callback, parent=None):
+        super().__init__(parent)
+        self._is_expanded_fn = is_expanded_fn
+        self._toggle_callback = toggle_callback
+
+    def mousePressEvent(self, event):
+        if not self._is_expanded_fn() and event.button() == Qt.LeftButton:
+            self._toggle_callback()
+            return
+        super().mousePressEvent(event)
+
+
+class CollapsibleHeaderFrame(QFrame):
+    """Tıklanabilir başlık alanı. Tıklandığında genişletme/daraltma tetikler."""
+    def __init__(self, toggle_callback, parent=None):
+        super().__init__(parent)
+        self._toggle_callback = toggle_callback
+        self.setCursor(Qt.PointingHandCursor)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # Doğrudan aksiyon butonlarına tıklandıysa ana toggle çağrısını engelle
+            child = self.childAt(event.pos())
+            if isinstance(child, (TouchButton, QPushButton)):
+                super().mousePressEvent(event)
+                return
+            self._toggle_callback()
+            return
+        super().mousePressEvent(event)
 
 
 class MissionSelectionWidget(QWidget):
@@ -44,41 +80,74 @@ class MissionSelectionWidget(QWidget):
         self.selected_session: Optional[MissionSession] = None
         self.card_widgets: List[MissionCardWidget] = []
         self.software_widgets: List[QWidget] = []
+        self.is_soft_expanded: bool = False  # Default olarak daraltılmış
 
         self._setup_ui()
         self.refresh_data()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 16, 20, 16)
-        main_layout.setSpacing(14)
+        # Dış Kök Düzen
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
 
-        # Üst Başlık Banner (Minimalist & Şık)
+        # =========================================================================
+        # ANA SAYFA TEK DİKEY KAYDIRMA ALANI (FieldOps Assistant dışındaki tüm alan)
+        # Sadece yukarı/aşağı kayar, yatay kaydırma kesinlikle kapalıdır.
+        # =========================================================================
+        self.page_scroll_area = QScrollArea(self)
+        self.page_scroll_area.setWidgetResizable(True)
+        self.page_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.page_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.page_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        self.scroll_content = QWidget()
+        self.scroll_content.setObjectName("WelcomeScrollContent")
+        content_layout = QVBoxLayout(self.scroll_content)
+        content_layout.setContentsMargins(20, 10, 20, 16)
+        content_layout.setSpacing(12)
+
+        # -------------------------------------------------------------------------
+        # 1. BAŞLIK BARI (Saha Operasyon Kontrol Merkezi - İçerik Yüksekliğine Göre Dinamik)
+        # -------------------------------------------------------------------------
         header = QFrame()
-        header.setProperty("class", "ModernCard")
+        header.setObjectName("WelcomeHeader")
+        header.setStyleSheet("""
+            QFrame#WelcomeHeader {
+                background-color: #0f172a;
+                border: 1px solid #1e293b;
+                border-radius: 10px;
+                padding: 4px 8px;
+            }
+        """)
         h_layout = QHBoxLayout(header)
-        h_layout.setContentsMargins(18, 12, 18, 12)
+        h_layout.setContentsMargins(14, 8, 14, 8)
+        h_layout.setSpacing(12)
 
         title_col = QVBoxLayout()
         title_col.setSpacing(2)
+
         title = QLabel("Saha Operasyon Kontrol Merkezi")
-        title.setProperty("class", "SectionTitle")
+        title.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc; letter-spacing: -0.2px;")
         title_col.addWidget(title)
 
-        subtitle = QLabel("Yeni bir saha görevi başlatabilir, hafızadaki yazılımları inceleyebilir veya kayıtlı faaliyete devam edebilirsiniz.")
-        subtitle.setProperty("class", "SectionSubtitle")
+        subtitle = QLabel("Yeni bir saha görevi başlatabilir, hafızadaki yazılımları yönetebilir veya kayıtlı faaliyete devam edebilirsiniz.")
+        subtitle.setStyleSheet("color: #94a3b8; font-size: 12px;")
         title_col.addWidget(subtitle)
+
         h_layout.addLayout(title_col)
         h_layout.addStretch()
 
         self.lbl_stats = QLabel("0 Kayıtlı Görev")
         self.lbl_stats.setProperty("class", "PillBadge PillInfo")
+        self.lbl_stats.setStyleSheet("font-size: 11.5px; font-weight: 600; padding: 4px 12px;")
         h_layout.addWidget(self.lbl_stats)
 
-        main_layout.addWidget(header)
+        content_layout.addWidget(header)
 
         # =========================================================================
-        # 1. ÜST BÖLÜM: YENİ FAALİYET (SOL) + KAYITLI FAALİYETLER (SAĞ) YANYANA
+        # 2. ÜST BÖLÜM: YENİ FAALİYET (SOL) + KAYITLI FAALİYETLER (SAĞ) YANYANA
+        # Dikine daha ferah alan kaplar (345px)
         # =========================================================================
         top_row = QHBoxLayout()
         top_row.setSpacing(14)
@@ -88,7 +157,7 @@ class MissionSelectionWidget(QWidget):
         # -------------------------------------------------------------------------
         new_card = QFrame()
         new_card.setProperty("class", "ModernCard")
-        new_card.setFixedHeight(270)
+        new_card.setFixedHeight(345)
         new_card_layout = QVBoxLayout(new_card)
         new_card_layout.setContentsMargins(20, 16, 20, 16)
         new_card_layout.setSpacing(10)
@@ -107,7 +176,7 @@ class MissionSelectionWidget(QWidget):
         # Lokasyon Seçimi
         loc_header = QHBoxLayout()
         lbl_loc = QLabel("Hedef Görev Lokasyonu:")
-        lbl_loc.setStyleSheet("font-weight: 600; color: #f8fafc; font-size: 12px;")
+        lbl_loc.setStyleSheet("font-weight: 600; color: #f8fafc; font-size: 12.5px;")
         loc_header.addWidget(lbl_loc)
         loc_header.addStretch()
 
@@ -141,7 +210,7 @@ class MissionSelectionWidget(QWidget):
         action_row.setSpacing(12)
 
         op_col = QVBoxLayout()
-        op_col.setSpacing(2)
+        op_col.setSpacing(3)
         lbl_op = QLabel("Saha Operatörü:")
         lbl_op.setStyleSheet("font-weight: 600; color: #f8fafc; font-size: 12px;")
         op_col.addWidget(lbl_op)
@@ -153,19 +222,21 @@ class MissionSelectionWidget(QWidget):
         action_row.addLayout(op_col, 5)
 
         btn_col = QVBoxLayout()
-        btn_col.setSpacing(2)
+        btn_col.setSpacing(3)
         lbl_dummy = QLabel(" ")
         lbl_dummy.setStyleSheet("font-size: 12px;")
         btn_col.addWidget(lbl_dummy)
 
         self.btn_start_new = TouchButton("Görevi Başlat  ➔", variant="primary")
-        self.btn_start_new.setFixedHeight(36)
+        self.btn_start_new.setFixedHeight(38)
         self.btn_start_new.setStyleSheet("font-size: 13px; font-weight: 700; padding: 4px 16px;")
         self.btn_start_new.clicked.connect(self._on_start_new_clicked)
         btn_col.addWidget(self.btn_start_new)
         action_row.addLayout(btn_col, 5)
 
         new_card_layout.addLayout(action_row)
+        new_card_layout.addStretch()
+
         top_row.addWidget(new_card, 5)
 
         # -------------------------------------------------------------------------
@@ -173,7 +244,7 @@ class MissionSelectionWidget(QWidget):
         # -------------------------------------------------------------------------
         resume_card = QFrame()
         resume_card.setProperty("class", "ModernCard")
-        resume_card.setFixedHeight(270)
+        resume_card.setFixedHeight(345)
         resume_layout = QVBoxLayout(resume_card)
         resume_layout.setContentsMargins(20, 16, 20, 16)
         resume_layout.setSpacing(10)
@@ -210,33 +281,64 @@ class MissionSelectionWidget(QWidget):
             "<span style='color: #64748b;'>Sol panelden yeni bir saha faaliyeti başlatabilirsiniz.</span>"
         )
         self.empty_state_lbl.setAlignment(Qt.AlignCenter)
-        self.empty_state_lbl.setStyleSheet("color: #64748b; font-size: 12px; line-height: 1.5; padding: 25px;")
+        self.empty_state_lbl.setStyleSheet("color: #64748b; font-size: 12px; line-height: 1.5; padding: 40px;")
         self.empty_state_lbl.setVisible(False)
         resume_layout.addWidget(self.empty_state_lbl)
 
         top_row.addWidget(resume_card, 5)
-        main_layout.addLayout(top_row, 0)
+        content_layout.addLayout(top_row)
 
         # =========================================================================
-        # 2. ALT BÖLÜM: HAFIZADAKİ YAZILIMLAR (TÜM EKRAN GENİŞLİĞİNE YAYILAN)
+        # 3. ALT BÖLÜM: HAFIZADAKİ YAZILIMLAR (Açılır / Kapanır - Default Daraltılmış)
         # =========================================================================
-        soft_card = QFrame()
-        soft_card.setProperty("class", "ModernCard")
-        soft_layout = QVBoxLayout(soft_card)
-        soft_layout.setContentsMargins(20, 16, 20, 16)
-        soft_layout.setSpacing(10)
+        self.soft_card = CollapsibleCardFrame(lambda: self.is_soft_expanded, self._toggle_softwares_expanded)
+        self.soft_card.setObjectName("SoftwaresCard")
+        self.soft_card.setProperty("class", "ModernCard")
+        self.soft_card.setMinimumHeight(0)
+        self.soft_card.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        self.soft_card.setCursor(Qt.PointingHandCursor)
 
-        soft_header = QHBoxLayout()
+        soft_layout = QVBoxLayout(self.soft_card)
+        soft_layout.setContentsMargins(18, 12, 18, 12)
+        soft_layout.setSpacing(8)
+
+        # Tıklanabilir Başlık Çubuğu
+        self.soft_header_frame = CollapsibleHeaderFrame(self._toggle_softwares_expanded)
+        self.soft_header_frame.setObjectName("SoftHeaderFrame")
+        self.soft_header_frame.setStyleSheet("""
+            QFrame#SoftHeaderFrame {
+                background-color: transparent;
+                border-radius: 8px;
+            }
+            QFrame#SoftHeaderFrame:hover {
+                background-color: rgba(30, 41, 59, 0.45);
+            }
+        """)
+
+        soft_header = QHBoxLayout(self.soft_header_frame)
+        soft_header.setContentsMargins(4, 2, 4, 2)
         soft_header.setSpacing(10)
+
+        self.lbl_soft_arrow = QLabel("▶")
+        self.lbl_soft_arrow.setStyleSheet("font-size: 13px; font-weight: 700; color: #38bdf8;")
+        self.lbl_soft_arrow.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        soft_header.addWidget(self.lbl_soft_arrow)
 
         soft_title = QLabel("💾 Hafızadaki Yazılımlar")
         soft_title.setStyleSheet("font-size: 15px; font-weight: 700; color: #38bdf8;")
+        soft_title.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         soft_header.addWidget(soft_title)
 
         self.lbl_softwares_count = QLabel("0 Sürüm")
         self.lbl_softwares_count.setProperty("class", "PillBadge PillInfo")
         self.lbl_softwares_count.setStyleSheet("font-size: 11px; padding: 2px 8px;")
+        self.lbl_softwares_count.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         soft_header.addWidget(self.lbl_softwares_count)
+
+        self.lbl_soft_hint = QLabel("(İçeriği görüntülemek için tıklayın)")
+        self.lbl_soft_hint.setStyleSheet("color: #64748b; font-size: 11.5px;")
+        self.lbl_soft_hint.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        soft_header.addWidget(self.lbl_soft_hint)
 
         soft_header.addStretch()
 
@@ -254,18 +356,34 @@ class MissionSelectionWidget(QWidget):
         self.btn_open_soft_dir.clicked.connect(self._on_open_softwares_folder)
         soft_header.addWidget(self.btn_open_soft_dir)
 
-        soft_layout.addLayout(soft_header)
+        self.btn_soft_toggle = TouchButton("▶ Genişlet", variant="ghost")
+        self.btn_soft_toggle.setFixedHeight(26)
+        self.btn_soft_toggle.setStyleSheet("min-height: 24px; padding: 2px 12px; font-size: 11.5px; font-weight: 600; border-radius: 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);")
+        self.btn_soft_toggle.setToolTip("Hafızadaki yazılımlar listesini genişlet / daralt")
+        self.btn_soft_toggle.clicked.connect(self._toggle_softwares_expanded)
+        soft_header.addWidget(self.btn_soft_toggle)
+
+        soft_layout.addWidget(self.soft_header_frame)
+
+        # -------------------------------------------------------------------------
+        # Gövde Konteyneri (soft_body): Default olarak daraltılmış (gizli)
+        # -------------------------------------------------------------------------
+        self.soft_body = QWidget()
+        self.soft_body_layout = QVBoxLayout(self.soft_body)
+        self.soft_body_layout.setContentsMargins(0, 6, 0, 0)
+        self.soft_body_layout.setSpacing(10)
 
         soft_desc = QLabel("Taşınabilir diskteki <code>softwares/&lt;uygulama&gt;/&lt;versiyon&gt;</code> hiyerarşisi taranarak tüm ana ve yardımcı yazılımlar listelenir.")
         soft_desc.setStyleSheet("color: #64748b; font-size: 11.5px;")
-        soft_layout.addWidget(soft_desc)
+        self.soft_body_layout.addWidget(soft_desc)
 
-        # Scrollable Yazılım Paketleri Listesi (Tüm Ekran Genişliğine Yayılmış Ferah Alan)
+        # Scrollable Yazılım Paketleri Listesi
         self.soft_scroll = QScrollArea()
         self.soft_scroll.setWidgetResizable(True)
         self.soft_scroll.setFrameShape(QFrame.NoFrame)
         self.soft_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.soft_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.soft_scroll.setMinimumHeight(260)
 
         self.soft_container = QWidget()
         self.soft_list_layout = QVBoxLayout(self.soft_container)
@@ -273,7 +391,7 @@ class MissionSelectionWidget(QWidget):
         self.soft_list_layout.setSpacing(10)
 
         self.soft_scroll.setWidget(self.soft_container)
-        soft_layout.addWidget(self.soft_scroll, 1)
+        self.soft_body_layout.addWidget(self.soft_scroll, 1)
 
         # Boş Durum Bilgisi (Software Empty State)
         self.soft_empty_lbl = QLabel(
@@ -283,9 +401,16 @@ class MissionSelectionWidget(QWidget):
         self.soft_empty_lbl.setAlignment(Qt.AlignCenter)
         self.soft_empty_lbl.setStyleSheet("color: #94a3b8; font-size: 12.5px; line-height: 1.5; padding: 24px;")
         self.soft_empty_lbl.setVisible(False)
-        soft_layout.addWidget(self.soft_empty_lbl)
+        self.soft_body_layout.addWidget(self.soft_empty_lbl)
 
-        main_layout.addWidget(soft_card, 1)
+        # Default olarak kapalı
+        self.soft_body.setVisible(False)
+        soft_layout.addWidget(self.soft_body)
+
+        content_layout.addWidget(self.soft_card)
+
+        self.page_scroll_area.setWidget(self.scroll_content)
+        root_layout.addWidget(self.page_scroll_area)
 
     def refresh_data(self):
         """Profilleri, yazılım havuzunu ve kayıtlı oturumları diskten yükler."""
@@ -363,6 +488,35 @@ class MissionSelectionWidget(QWidget):
                 self.soft_list_layout.addWidget(group_widget)
 
             self.soft_list_layout.addStretch()
+
+        # Kartın açık/kapalı durumuna göre gövde görünürlüğünü koru
+        self.soft_body.setVisible(self.is_soft_expanded)
+
+    def _toggle_softwares_expanded(self):
+        """Hafızadaki yazılımlar kartını genişletir veya daraltır."""
+        self.is_soft_expanded = not self.is_soft_expanded
+        self._update_softwares_expanded_state()
+
+    def _update_softwares_expanded_state(self):
+        """Açık/kapalı durumuna göre arayüz elemanlarını günceller."""
+        if self.is_soft_expanded:
+            self.soft_card.setCursor(Qt.ArrowCursor)
+            self.soft_body.setVisible(True)
+            self.soft_card.setMinimumHeight(360)
+            self.soft_card.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            self.lbl_soft_arrow.setText("▼")
+            self.lbl_soft_hint.setText("(Daraltmak için tıklayın)")
+            self.btn_soft_toggle.setText("▼ Daralt")
+            self.btn_soft_toggle.setToolTip("Hafızadaki yazılımlar listesini daralt")
+        else:
+            self.soft_card.setCursor(Qt.PointingHandCursor)
+            self.soft_body.setVisible(False)
+            self.soft_card.setMinimumHeight(0)
+            self.soft_card.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+            self.lbl_soft_arrow.setText("▶")
+            self.lbl_soft_hint.setText("(İçeriği görüntülemek için tıklayın)")
+            self.btn_soft_toggle.setText("▶ Genişlet")
+            self.btn_soft_toggle.setToolTip("Hafızadaki yazılımlar listesini genişlet")
 
     def _create_app_group_widget(self, app_name: str, versions: List[StoredSoftwareInfo]) -> QWidget:
         """Belirli bir uygulama ve ona ait versiyonlar için ağaç formatında grup kartı oluşturur."""
