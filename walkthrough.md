@@ -61,11 +61,16 @@ FieldOps Assistant; saha görevlerinde kurum içi yazılım ve donanımların lo
 
 ---
 
-### 4. Saha Ekipmanları Acil Durum Force Geçişi (`Force Override`)
+### 4. Saha Ekipmanları Acil Durum Force Geçişi & Sadeleştirilmiş Aşama 1 Düzeni
 - **Aşama 1 Ekipman Kontrolleri**:
   - Lokasyon profilinde zorunlu (`required: true`) işaretli saha ekipmanları eksik olduğunda standart olarak "Aşama 2'ye Geç" butonu kilitlidir.
   - Saha personeli acil durumlarda veya ekipmanı alternatif yollarla sağladığında mağdur olmamak adına **`⚠️ Zorunlu Ekipmanı Yoksay (Acil Geçiş)`** butonunu kullanabilir.
-  - Bu butona basıldığında uyarı onay diyaloğu açılır ve operatör gerekçesiyle birlikte zorla devam edebilir.
+- **Yalın ve Dengeli İki Sütunlu Görünüm**:
+  - Lokasyon profili ve operatör adı zaten ana karşılama ekranında (Launchpad) seçildiği ve üst barda sürekli gösterildiği için, Aşama 1'deki mükerrer `loc_card` paneli kaldırılarak alan israfı ve dikey sıkışma tamamen ortadan kaldırıldı.
+  - Aşama 1 artık %50 - %50 dengeli iki ferah kolondan oluşur:
+    - **Sol Kolon**: Hedefe aktarılacak konfigürasyon şablonu ve gerekli yazılım paketlerinin otomatik taranıp listelendiği `pkg_card`.
+    - **Sağ Kolon**: İnteraktif saha ekipman ve malzeme kontrol listesi (`equip_card`).
+  - Seçili lokasyon, operatör ve hedef cihaz bilgisi Aşama 1'in üst başlık alanında dinamik bir alt satır olarak zarif bir biçimde sunulur.
 
 ---
 

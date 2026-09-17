@@ -9,8 +9,9 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QLineEdit, QFileDialog, QMessageBox, QFrame, QSizePolicy, QCheckBox
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QFileDialog, QMessageBox, QFrame, QSizePolicy, QCheckBox,
+    QScrollArea
 )
 
 from app.core.asset_manager import SoftwareAssetManager
@@ -34,98 +35,83 @@ class Stage1PreflightWidget(QWidget):
         self.profile_manager = profile_manager
         self.asset_manager = asset_manager
         self.current_profile: Optional[LocationProfile] = None
+        self.operator_name: str = "Saha Mühendisi"
         self.checklist_widget: Optional[ChecklistWidget] = None
 
         self._setup_ui()
-        self._load_profiles()
 
     def _setup_ui(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(24, 16, 24, 16)
-        main_layout.setSpacing(14)
+        main_layout.setContentsMargins(20, 12, 20, 12)
+        main_layout.setSpacing(12)
 
-        # Üst Başlık Kartı
+        # Üst Başlık Kartı (Dinamik ve İnce Tasarım)
         header_frame = QFrame()
-        header_frame.setProperty("class", "ModernCard")
+        header_frame.setObjectName("Stage1Header")
+        header_frame.setStyleSheet("""
+            QFrame#Stage1Header {
+                background-color: #0f172a;
+                border: 1px solid #1e293b;
+                border-radius: 10px;
+                padding: 4px 10px;
+            }
+        """)
         h_layout = QVBoxLayout(header_frame)
-        h_layout.setContentsMargins(18, 12, 18, 12)
+        h_layout.setContentsMargins(14, 8, 14, 8)
         h_layout.setSpacing(4)
 
         title = QLabel("1. AŞAMA: Yola Çıkış & Saha Ön Hazırlığı")
-        title.setProperty("class", "SectionTitle")
+        title.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
         h_layout.addWidget(title)
 
-        desc = QLabel("Hedef lokasyon konfigürasyonlarını, yazılım paketlerini ve malzeme çantanızı doğrulayın.")
-        desc.setProperty("class", "SectionSubtitle")
-        h_layout.addWidget(desc)
+        self.desc_lbl = QLabel("Hedef lokasyon konfigürasyonlarını, yazılım paketlerini ve malzeme çantanızı doğrulayın.")
+        self.desc_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        self.desc_lbl.setWordWrap(True)
+        h_layout.addWidget(self.desc_lbl)
+        header_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         main_layout.addWidget(header_frame)
 
-        # İKİ SÜTUNLU ANA GÖVDE (SOL: Lokasyon & Paketler, SAĞ: Geniş Ekipman Listesi)
+        # İKİ SÜTUNLU ANA GÖVDE (SOL: Paketler & Konfigürasyon, SAĞ: Geniş Ekipman Listesi)
         body_layout = QHBoxLayout()
-        body_layout.setSpacing(18)
+        body_layout.setSpacing(16)
 
         # ==========================================
-        # SOL KOLON (Lokasyon + Paketler)
+        # SOL KOLON: YAZILIM PAKETLERİ & KONFİGÜRASYON
         # ==========================================
-        left_column = QVBoxLayout()
-        left_column.setSpacing(14)
-
-        # 1. KART: Lokasyon & Operatör
-        loc_card = QFrame()
-        loc_card.setProperty("class", "ModernCard")
-        loc_layout = QVBoxLayout(loc_card)
-        loc_layout.setContentsMargins(18, 16, 18, 16)
-        loc_layout.setSpacing(12)
-
-        lbl_s1 = QLabel("📍 Lokasyon ve Operatör Bilgisi")
-        lbl_s1.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
-        loc_layout.addWidget(lbl_s1)
-
-        row1 = QHBoxLayout()
-        lbl_loc = QLabel("Hedef Lokasyon:")
-        lbl_loc.setStyleSheet("font-weight: 600; min-width: 120px; color: #e2e8f0; font-size: 13px;")
-        self.loc_combo = QComboBox()
-        self.loc_combo.currentIndexChanged.connect(self._on_profile_selected)
-        row1.addWidget(lbl_loc)
-        row1.addWidget(self.loc_combo, 1)
-        loc_layout.addLayout(row1)
-
-        row2 = QHBoxLayout()
-        lbl_op = QLabel("Saha Operatörü:")
-        lbl_op.setStyleSheet("font-weight: 600; min-width: 120px; color: #e2e8f0; font-size: 13px;")
-        self.op_input = QLineEdit()
-        self.op_input.setPlaceholderText("Operatör adı...")
-        self.op_input.setText("Saha Mühendisi")
-        row2.addWidget(lbl_op)
-        row2.addWidget(self.op_input, 1)
-        loc_layout.addLayout(row2)
-
-        self.loc_desc_lbl = QLabel()
-        self.loc_desc_lbl.setStyleSheet("color: #94a3b8; font-size: 12px; line-height: 1.3;")
-        self.loc_desc_lbl.setWordWrap(True)
-        loc_layout.addWidget(self.loc_desc_lbl)
-        left_column.addWidget(loc_card)
-
-        # 2. KART: Yazılım Paketleri & Konfigürasyon Taraması
         self.pkg_card = QFrame()
         self.pkg_card.setProperty("class", "ModernCard")
+        self.pkg_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.pkg_layout = QVBoxLayout(self.pkg_card)
-        self.pkg_layout.setContentsMargins(18, 16, 18, 16)
-        self.pkg_layout.setSpacing(12)
+        self.pkg_layout.setContentsMargins(20, 18, 20, 18)
+        self.pkg_layout.setSpacing(14)
 
+        pkg_header = QHBoxLayout()
         lbl_s2 = QLabel("📦 Yazılım Paketleri & Konfigürasyon")
         lbl_s2.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
-        self.pkg_layout.addWidget(lbl_s2)
+        pkg_header.addWidget(lbl_s2)
+        pkg_header.addStretch()
 
-        # Paketlerin listesi doğrudan kart içinde doğal boyutuyla listelenir (scroll alanı kaldırıldı)
-        self.pkg_items_layout = QVBoxLayout()
-        self.pkg_items_layout.setContentsMargins(0, 4, 0, 0)
+        lbl_pkg_hint = QLabel("Hedefe aktarılacak bileşenler")
+        lbl_pkg_hint.setStyleSheet("color: #64748b; font-size: 12px;")
+        pkg_header.addWidget(lbl_pkg_hint)
+        self.pkg_layout.addLayout(pkg_header)
+
+        # Paketlerin listesi için dahili kaydırma alanı
+        self.pkg_scroll = QScrollArea()
+        self.pkg_scroll.setWidgetResizable(True)
+        self.pkg_scroll.setFrameShape(QFrame.NoFrame)
+        self.pkg_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.pkg_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        pkg_items_container = QWidget()
+        self.pkg_items_layout = QVBoxLayout(pkg_items_container)
+        self.pkg_items_layout.setContentsMargins(0, 2, 4, 2)
         self.pkg_items_layout.setSpacing(10)
-        self.pkg_layout.addLayout(self.pkg_items_layout)
 
-        left_column.addWidget(self.pkg_card)
-        left_column.addStretch()
-        body_layout.addLayout(left_column, 5)
+        self.pkg_scroll.setWidget(pkg_items_container)
+        self.pkg_layout.addWidget(self.pkg_scroll, 1)
+
+        body_layout.addWidget(self.pkg_card, 1)
 
         # ==========================================
         # SAĞ KOLON: GENİŞ VE FERAH EKİPMAN LİSTESİ
@@ -153,7 +139,7 @@ class Stage1PreflightWidget(QWidget):
         self.equip_container.setContentsMargins(0, 4, 0, 0)
         self.equip_layout.addLayout(self.equip_container, 1)
 
-        body_layout.addWidget(self.equip_card, 6)
+        body_layout.addWidget(self.equip_card, 1)
         main_layout.addLayout(body_layout, 1)
 
         # ==========================================
@@ -185,41 +171,24 @@ class Stage1PreflightWidget(QWidget):
 
         self.complete_btn = TouchButton("Hazırlığı Tamamla ve Yola Çık  ➔", variant="primary")
         self.complete_btn.setMinimumWidth(320)
+        self.complete_btn.setFixedHeight(42)
         self.complete_btn.clicked.connect(self._on_complete_clicked)
         bottom_bar.addWidget(self.complete_btn)
 
         main_layout.addLayout(bottom_bar)
 
     def _load_profiles(self):
-        profiles = self.profile_manager.list_profiles()
-        self.loc_combo.clear()
-        for prof in profiles:
-            self.loc_combo.addItem(f"{prof.name} ({prof.id})", prof.id)
+        """Uyumluluk için korunmuştur (seçim ana karşılama ekranında yapılır)."""
+        pass
 
     def set_profile(self, profile: LocationProfile, operator_name: str):
-        idx = self.loc_combo.findData(profile.id)
-        if idx >= 0:
-            self.loc_combo.setCurrentIndex(idx)
-        else:
-            self.loc_combo.addItem(f"{profile.name} ({profile.id})", profile.id)
-            self.loc_combo.setCurrentIndex(self.loc_combo.count() - 1)
-        self.op_input.setText(operator_name)
-        self._on_profile_selected(self.loc_combo.currentIndex())
-
-    def _on_profile_selected(self, index: int):
-        profile_id = self.loc_combo.currentData()
-        if not profile_id:
-            return
-
-        self.current_profile = self.profile_manager.load_profile(profile_id)
-        if not self.current_profile:
-            return
-
-        self.loc_desc_lbl.setText(
-            f"Hedef Sistem: <b>{self.current_profile.target_device.username}@{self.current_profile.target_device.host}</b><br>"
-            f"{self.current_profile.description}"
+        self.current_profile = profile
+        self.operator_name = operator_name
+        self.desc_lbl.setText(
+            f"Aktif Lokasyon: <b style='color: #60a5fa;'>{profile.name}</b>  •  "
+            f"Operatör: <b style='color: #e2e8f0;'>{operator_name}</b>  •  "
+            f"Hedef: <code style='color: #38bdf8;'>{profile.target_device.username}@{profile.target_device.host}:{profile.target_device.port}</code>"
         )
-
         self._refresh_software_packages()
         self._refresh_equipment_checklist()
         self._update_readiness()
@@ -291,6 +260,8 @@ class Stage1PreflightWidget(QWidget):
                 row_layout.addWidget(browse_btn)
 
             self.pkg_items_layout.addWidget(row_frame)
+
+        self.pkg_items_layout.addStretch(1)
 
     def _browse_external_package(self, req: SoftwareRequirement):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -380,7 +351,7 @@ class Stage1PreflightWidget(QWidget):
             if reply != QMessageBox.Yes:
                 return
 
-        op_name = self.op_input.text().strip() or "Saha_Operatoru"
+        op_name = self.operator_name or "Saha_Operatoru"
         reply = QMessageBox.question(
             self,
             "1. Aşamayı Tamamla",
