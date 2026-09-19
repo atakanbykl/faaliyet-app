@@ -79,10 +79,30 @@ QPushButton:pressed {
     background-color: #131d33;
     border-color: #3b82f6;
 }
-QPushButton:disabled {
+QPushButton:disabled,
+QPushButton.PrimaryButton:disabled,
+QPushButton.SuccessButton:disabled,
+QPushButton.WarningButton:disabled,
+QPushButton.DangerButton:disabled,
+QPushButton.GhostButton:disabled,
+QPushButton.DeleteButton:disabled {
+    background: #0f172a;
     background-color: #0f172a;
     color: #475569;
-    border-color: #1e293b;
+    border: 1px solid #1e293b;
+}
+
+QPushButton:disabled:hover,
+QPushButton.PrimaryButton:disabled:hover,
+QPushButton.SuccessButton:disabled:hover,
+QPushButton.WarningButton:disabled:hover,
+QPushButton.DangerButton:disabled:hover,
+QPushButton.GhostButton:disabled:hover,
+QPushButton.DeleteButton:disabled:hover {
+    background: #0f172a;
+    background-color: #0f172a;
+    color: #475569;
+    border: 1px solid #1e293b;
 }
 
 /* Birincil Aksiyon Butonu (Mavi - İndigo Modern Gradyan) */

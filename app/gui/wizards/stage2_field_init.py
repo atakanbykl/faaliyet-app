@@ -10,7 +10,7 @@ from typing import Optional
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QMessageBox, QScrollArea, QRadioButton, QButtonGroup
+    QMessageBox, QScrollArea, QRadioButton, QButtonGroup, QCheckBox
 )
 
 from app.adapters.base_adapter import BaseExecutionAdapter
@@ -29,6 +29,8 @@ class Stage2FieldInitWidget(QWidget):
         super().__init__(parent)
         self.profile: Optional[LocationProfile] = None
         self.adapter: Optional[BaseExecutionAdapter] = None
+        self._sw_checked: bool = False
+        self._sw_pending: list[str] = []
 
         self._setup_ui()
 
@@ -178,20 +180,29 @@ class Stage2FieldInitWidget(QWidget):
 
         main_layout.addLayout(content_layout)
 
-        # Alt Buton
+        # Alt Buton & Durum Çubuğu
         bottom_bar = QHBoxLayout()
-        self.lbl_init_summary = QLabel()
-        self.lbl_init_summary.setStyleSheet("font-size: 13px; font-weight: 600;")
+        bottom_bar.setContentsMargins(0, 10, 0, 0)
+
+        self.lbl_init_summary = QLabel("")
+        self.lbl_init_summary.setStyleSheet("font-size: 13px; font-weight: 500;")
         bottom_bar.addWidget(self.lbl_init_summary)
         bottom_bar.addStretch()
 
-        self.btn_complete_stage2 = TouchButton("Faaliyeti Başlat ve Aşama 3'e Geç  ➔", variant="success")
+        self.chk_force_init = QCheckBox("Eksik adımlara rağmen ilerlemeye izin ver (Force)")
+        self.chk_force_init.setStyleSheet("color: #94a3b8; font-size: 13px;")
+        self.chk_force_init.stateChanged.connect(self._update_readiness)
+        bottom_bar.addWidget(self.chk_force_init)
+
+        self.btn_complete_stage2 = TouchButton("Faaliyeti Başlat ve Aşama 3'e Geç  ➔", variant="primary")
         self.btn_complete_stage2.setMinimumWidth(320)
+        self.btn_complete_stage2.setFixedHeight(42)
         self.btn_complete_stage2.setEnabled(False)
         self.btn_complete_stage2.clicked.connect(self._on_complete_stage2)
         bottom_bar.addWidget(self.btn_complete_stage2)
 
         main_layout.addLayout(bottom_bar)
+        self._update_readiness()
 
     def _apply_platform_default_mode(self):
         """Çalışılan işletim sistemine göre bağlantı modunu önden seçer (kullanıcı elle değiştirebilir)."""
@@ -234,15 +245,36 @@ class Stage2FieldInitWidget(QWidget):
         self.lbl_conn_status.setProperty("class", "PillBadge PillWarning")
         self.lbl_conn_status.style().unpolish(self.lbl_conn_status)
         self.lbl_conn_status.style().polish(self.lbl_conn_status)
+        self.adapter = None
+        self._sw_checked = False
+        self._sw_pending = [req.name for req in self.profile.software_requirements] if self.profile else []
         if hasattr(self, "console"):
             self.console.append_log(f"Bağlantı modu değiştirildi: {mode_str}", "system")
+        self._update_readiness()
 
     def load_session(self, profile: LocationProfile):
         self.profile = profile
+        self.adapter = None
+        self._sw_checked = False
+        self._sw_pending = [req.name for req in profile.software_requirements] if profile else []
+        if hasattr(self, "chk_force_init"):
+            self.chk_force_init.setChecked(False)
+
+        self.lbl_conn_status.setText("Test Edilmedi")
+        self.lbl_conn_status.setProperty("class", "PillBadge PillWarning")
+        self.lbl_conn_status.style().unpolish(self.lbl_conn_status)
+        self.lbl_conn_status.style().polish(self.lbl_conn_status)
+
+        self.lbl_cfg_status.setText("Beklemede")
+        self.lbl_cfg_status.setProperty("class", "PillBadge PillWarning")
+        self.lbl_cfg_status.style().unpolish(self.lbl_cfg_status)
+        self.lbl_cfg_status.style().polish(self.lbl_cfg_status)
+
         self.info_lbl.setText(f"Aktif Lokasyon: <b>{profile.name}</b>  •  Hedef: {profile.target_device.host}")
         self.lbl_cfg_target.setText(f"Hedef Dosya: <code>{profile.target_device.remote_config_path}</code>")
         self.console.append_log(f"2. Aşama Başlatıldı. Hedef: {profile.target_device.host}", "system")
         self._apply_platform_default_mode()
+        self._update_readiness()
 
     def _get_active_adapter(self) -> BaseExecutionAdapter:
         if self.radio_local.isChecked():
@@ -270,15 +302,23 @@ class Stage2FieldInitWidget(QWidget):
 
         self.lbl_conn_status.style().unpolish(self.lbl_conn_status)
         self.lbl_conn_status.style().polish(self.lbl_conn_status)
+        self._update_readiness()
 
     def _check_installed_versions(self):
-        if not self.adapter or not self.profile:
+        if not self.profile:
+            return
+        if not self.adapter:
+            if hasattr(self, "console"):
+                self.console.append_log("Önce cihaz bağlantısını doğrulayınız.", "warn")
             return
 
         while self.sw_cards_container.count():
             item = self.sw_cards_container.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+
+        self._sw_checked = True
+        self._sw_pending = []
 
         for req in self.profile.software_requirements:
             card = QFrame()
@@ -305,6 +345,7 @@ class Stage2FieldInitWidget(QWidget):
                     badge.setProperty("class", "PillBadge PillSuccess")
                     card_layout.addWidget(badge)
                 else:
+                    self._sw_pending.append(req.name)
                     badge = QLabel(f"v{detected_version} Farklı")
                     badge.setProperty("class", "PillBadge PillWarning")
                     card_layout.addWidget(badge)
@@ -315,6 +356,7 @@ class Stage2FieldInitWidget(QWidget):
                     btn_update.clicked.connect(lambda _, r=req: self._deploy_software(r))
                     card_layout.addWidget(btn_update)
             else:
+                self._sw_pending.append(req.name)
                 self.console.append_log(f"{req.name} kurulu değil.", "warn")
                 badge = QLabel("Kurulu Değil")
                 badge.setProperty("class", "PillBadge PillDanger")
@@ -327,6 +369,8 @@ class Stage2FieldInitWidget(QWidget):
                 card_layout.addWidget(btn_install)
 
             self.sw_cards_container.addWidget(card)
+
+        self._update_readiness()
 
     def _deploy_software(self, req: SoftwareRequirement):
         if not req.resolved_package_path:
@@ -361,9 +405,14 @@ class Stage2FieldInitWidget(QWidget):
         else:
             self.console.append_log(f"KURULUM HATASI: {msg}", "error")
             QMessageBox.critical(self, "Hata", f"Yazılım yüklenirken hata oluştu:\n{msg}")
+            self._update_readiness()
 
     def _apply_configuration(self):
-        if not self.adapter or not self.profile:
+        if not self.profile:
+            return
+        if not self.adapter:
+            if hasattr(self, "console"):
+                self.console.append_log("Önce cihaz bağlantısını doğrulayınız.", "warn")
             return
 
         reply = QMessageBox.question(
@@ -389,8 +438,6 @@ class Stage2FieldInitWidget(QWidget):
             self.lbl_cfg_status.setText("✓ Uygulandı")
             self.lbl_cfg_status.setProperty("class", "PillBadge PillSuccess")
             self.console.append_log(f"KONFİGÜRASYON UYGULANDI: {msg}", "info")
-            self.btn_complete_stage2.setEnabled(True)
-            self.lbl_init_summary.setText("<span style='color:#34d399;'>✓ Sistem hazır.</span>")
         else:
             self.lbl_cfg_status.setText("Hata")
             self.lbl_cfg_status.setProperty("class", "PillBadge PillDanger")
@@ -398,8 +445,65 @@ class Stage2FieldInitWidget(QWidget):
 
         self.lbl_cfg_status.style().unpolish(self.lbl_cfg_status)
         self.lbl_cfg_status.style().polish(self.lbl_cfg_status)
+        self._update_readiness()
+
+    def _update_readiness(self):
+        if not hasattr(self, "lbl_init_summary") or not hasattr(self, "btn_complete_stage2"):
+            return
+
+        if not self.profile:
+            self.lbl_init_summary.setText("<span style='color: #94a3b8;'>Lokasyon profili yüklenmedi</span>")
+            self.btn_complete_stage2.setText("Faaliyeti Başlat ve Aşama 3'e Geç  ➔")
+            self.btn_complete_stage2.setEnabled(False)
+            self.btn_complete_stage2.set_variant("primary")
+            return
+
+        reasons = []
+
+        # 1. Cihaz Bağlantı Kontrolü
+        conn_ok = (self.adapter is not None and "Başarılı" in self.lbl_conn_status.text())
+        if not conn_ok:
+            if "Hata" in self.lbl_conn_status.text():
+                reasons.append("Cihaz bağlantısı başarısız")
+            else:
+                reasons.append("Cihaz bağlantısı test edilmedi")
+
+        # 2. Yazılım Sürüm Denetimi
+        if self.profile.software_requirements:
+            if not getattr(self, "_sw_checked", False):
+                reasons.append("Yazılım sürümleri sorgulanmadı")
+            elif getattr(self, "_sw_pending", []):
+                reasons.append(f"Güncelleme bekleyen yazılımlar var ({len(self._sw_pending)})")
+
+        # 3. Konfigürasyon Enjeksiyonu Kontrolü
+        has_config = bool(self.profile.baseline_config_content and self.profile.baseline_config_content.strip())
+        if has_config:
+            cfg_ok = ("Uygulandı" in self.lbl_cfg_status.text())
+            if not cfg_ok:
+                reasons.append("Konfigürasyon uygulanmadı")
+
+        force_active = hasattr(self, "chk_force_init") and self.chk_force_init.isChecked()
+
+        if not reasons:
+            self.lbl_init_summary.setText("<span style='color: #34d399;'>✓ Tüm sistem ve servis kontrolleri tamamlandı.</span>")
+            self.btn_complete_stage2.setText("Faaliyeti Başlat ve Aşama 3'e Geç  ➔")
+            self.btn_complete_stage2.setEnabled(True)
+            self.btn_complete_stage2.set_variant("success")
+        elif force_active:
+            self.lbl_init_summary.setText(f"<span style='color: #fbbf24;'>⚠️ Force Aktif: {len(reasons)} eksik kontrole rağmen ilerleniyor</span>")
+            self.btn_complete_stage2.setText("⚠️ Doğrulamadan Yine de Başlat  ➔")
+            self.btn_complete_stage2.setEnabled(True)
+            self.btn_complete_stage2.set_variant("warning")
+        else:
+            self.lbl_init_summary.setText(f"<span style='color: #fbbf24;'>Bekleyen: {', '.join(reasons)}</span>")
+            self.btn_complete_stage2.setText("Faaliyeti Başlat ve Aşama 3'e Geç  ➔")
+            self.btn_complete_stage2.setEnabled(False)
+            self.btn_complete_stage2.set_variant("primary")
 
     def _on_complete_stage2(self):
+        if not self.btn_complete_stage2.isEnabled():
+            return
+
         reply = QMessageBox.question(
             self,
             "Faaliyeti Başlat",
@@ -410,4 +514,6 @@ class Stage2FieldInitWidget(QWidget):
         )
         if reply == QMessageBox.Yes:
             self.console.append_log("2. AŞAMA TAMAMLANDI.", "system")
+            if not self.adapter:
+                self.adapter = self._get_active_adapter()
             self.stage_completed.emit(self.adapter)
