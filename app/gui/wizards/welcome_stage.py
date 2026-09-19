@@ -164,7 +164,8 @@ class MissionSelectionWidget(QWidget):
         # -------------------------------------------------------------------------
         new_card = QFrame()
         new_card.setProperty("class", "ModernCard")
-        new_card.setFixedHeight(345)
+        new_card.setMinimumHeight(345)
+        new_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         new_card_layout = QVBoxLayout(new_card)
         new_card_layout.setContentsMargins(20, 16, 20, 16)
         new_card_layout.setSpacing(10)
@@ -251,7 +252,8 @@ class MissionSelectionWidget(QWidget):
         # -------------------------------------------------------------------------
         resume_card = QFrame()
         resume_card.setProperty("class", "ModernCard")
-        resume_card.setFixedHeight(345)
+        resume_card.setMinimumHeight(345)
+        resume_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         resume_layout = QVBoxLayout(resume_card)
         resume_layout.setContentsMargins(20, 16, 20, 16)
         resume_layout.setSpacing(10)
