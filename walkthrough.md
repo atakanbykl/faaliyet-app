@@ -17,11 +17,10 @@ FieldOps Assistant; saha görevlerinde kurum içi yazılım ve donanımların lo
 - **Genişletilmiş Üst Kartlar (345px Yükseklik - %50 / %50 Yan Yana)**:
   - **Sol Kart**: 🚀 *Yeni Faaliyet Başlat* (Hedef lokasyon seçimi, `+ Yeni` / `✏️ Düzenle`, operatör girişi ve 38px yüksekliğinde belirgin `Görevi Başlat ➔` butonu).
   - **Sağ Kart**: 📂 *Kayıtlı Faaliyetler* (Önceki oturum kartları, devam etme ve logolu silme butonları; 3 görevi kaydırma çubuğu olmadan tam boy gösterebilen 345px alan).
-- **Açılır / Kapanır (Collapsible) Hafızadaki Yazılımlar Kartı**:
-  - **Varsayılan Olarak Daraltılmış (Collapsed by Default)**: Uygulama açıldığında kart kompakt tek bir şerit (`~52px`) halinde durur; üstteki Yeni Faaliyet ve Kayıtlı Faaliyetler kartları öne çıkar.
-  - **Tıklayarak Genişletme (Expand on Click)**: Kartın veya başlık çubuğunun üzerine tıklandığında veya sağdaki `▶ Genişlet` butonuna basıldığında kart akıcı bir şekilde açılarak tüm yazılım ve versiyon ağacını sergiler (`▼ Daralt`).
-  - **Buton İzolasyonu**: Başlıkta yer alan `🔄 Yenile` ve `📂 Klasörü Aç` butonlarına basıldığında kartın yanlışlıkla açılıp kapanması engellenmiş, butonların doğrudan kendi aksiyonlarını yürütmesi güvenceye alınmıştır.
-  - **Görsel Durum Göstergeleri**: Daraltılmışken `▶` yön oku, `(İçeriği görüntülemek için tıklayın)` yönlendirme metni ve `▶ Genişlet` butonu; genişletildiğinde ise `▼` oku, `(Daraltmak için tıklayın)` metni ve `▼ Daralt` butonu gösterilir.
+- **Kusursuz Koyu Scrollbar & Kaydırma Alanları (`Fusion` & `get_dark_palette`)**:
+  - Windows'un yerel açık renkli (beyaz/açık gri) kaydırma çubukları ve viewport arka planları tamamen ortadan kaldırıldı.
+  - Uygulama çapında `Fusion` masaüstü motoru ve obsidian palet (`#080c14`, `#0b1120`, `#334155`) devreye alındı.
+  - İnce (8px), modern yuvarlatılmış hap formunda (`border-radius: 4px`), hover durumunda mavi (`#60a5fa`), sürüklendiğinde birincil mavi (`#2563eb`) ile vurgulanan tutarlı ve zarif koyu scrollbar entegrasyonu tamamlandı.
 
 ---
 

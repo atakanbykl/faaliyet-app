@@ -3,6 +3,9 @@ FieldOps Assistant - Modern, Akıcı ve Reaktif UI Teması (Linear & Raycast Dar
 Obsidian derin zemin, cam efektli (glassmorphism) hap rozetler, gradyan butonlar ve kusursuz tipografi.
 """
 
+from __future__ import annotations
+from PySide6.QtGui import QPalette, QColor
+
 FIELD_DARK_THEME = """
 /* ===================================================
    GENEL PENCERE VE ARKA PLAN (OBSIDIAN DARK)
@@ -384,34 +387,148 @@ QTextEdit.ModernConsole {
 }
 
 /* ===================================================
-   KUSURSUZ İNCE SCROLLBAR
+   KUSURSUZ MODERN KOYU SCROLL ALANLARI VE SCROLLBAR
    =================================================== */
-QScrollArea {
+QScrollArea, QAbstractScrollArea {
     border: none;
+    background-color: transparent;
     background: transparent;
 }
+
+QScrollArea > QWidget > QWidget {
+    background-color: transparent;
+    background: transparent;
+}
+
+QScrollArea > QWidget#qt_scrollarea_viewport,
+QAbstractScrollArea > QWidget#qt_scrollarea_viewport {
+    background-color: transparent;
+    background: transparent;
+}
+
+QAbstractScrollArea::corner, QScrollBar::corner {
+    background-color: transparent;
+    border: none;
+}
+
+/* DİKEY SCROLLBAR (Modern Obsidian / Slate İnce & Tutarlı Çubuk) */
 QScrollBar:vertical {
-    background: transparent;
-    width: 6px;
-    margin: 0px;
+    background-color: rgba(11, 17, 32, 0.6);
+    width: 8px;
+    margin: 0px 0px 0px 0px;
+    border: none;
+    border-radius: 4px;
 }
+
 QScrollBar::handle:vertical {
-    background: #1e293b;
-    min-height: 30px;
-    border-radius: 3px;
+    background-color: #334155;
+    min-height: 28px;
+    border-radius: 4px;
 }
+
 QScrollBar::handle:vertical:hover {
-    background: #3b82f6;
+    background-color: #60a5fa;
 }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+
+QScrollBar::handle:vertical:pressed {
+    background-color: #2563eb;
+}
+
+QScrollBar::add-line:vertical {
+    border: none;
+    background: none;
     height: 0px;
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
 }
-QScrollBar:horizontal {
+
+QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
     height: 0px;
-    background: transparent;
+    subcontrol-position: top;
+    subcontrol-origin: margin;
 }
-QScrollBar::handle:horizontal, QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+
+QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
+    border: none;
+    background: none;
     width: 0px;
     height: 0px;
 }
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+    border: none;
+}
+
+/* YATAY SCROLLBAR */
+QScrollBar:horizontal {
+    background-color: rgba(11, 17, 32, 0.6);
+    height: 8px;
+    margin: 0px 0px 0px 0px;
+    border: none;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: #334155;
+    min-width: 28px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: #60a5fa;
+}
+
+QScrollBar::handle:horizontal:pressed {
+    background-color: #2563eb;
+}
+
+QScrollBar::add-line:horizontal {
+    border: none;
+    background: none;
+    width: 0px;
+    subcontrol-position: right;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::sub-line:horizontal {
+    border: none;
+    background: none;
+    width: 0px;
+    subcontrol-position: left;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::left-arrow:horizontal, QScrollBar::right-arrow:horizontal {
+    border: none;
+    background: none;
+    width: 0px;
+    height: 0px;
+}
+
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+    border: none;
+}
 """
+
+
+def get_dark_palette() -> QPalette:
+    """Windows ve diğer sistemlerde yerel açık tema sızıntılarını önleyen küresel koyu palet."""
+    palette = QPalette()
+    palette.setColor(QPalette.Window, QColor("#080c14"))
+    palette.setColor(QPalette.WindowText, QColor("#f1f5f9"))
+    palette.setColor(QPalette.Base, QColor("#0b1120"))
+    palette.setColor(QPalette.AlternateBase, QColor("#0f172a"))
+    palette.setColor(QPalette.ToolTipBase, QColor("#0f172a"))
+    palette.setColor(QPalette.ToolTipText, QColor("#f8fafc"))
+    palette.setColor(QPalette.Text, QColor("#f8fafc"))
+    palette.setColor(QPalette.Button, QColor("#1e293b"))
+    palette.setColor(QPalette.ButtonText, QColor("#f8fafc"))
+    palette.setColor(QPalette.BrightText, QColor("#ef4444"))
+    palette.setColor(QPalette.Link, QColor("#3b82f6"))
+    palette.setColor(QPalette.Highlight, QColor("#2563eb"))
+    palette.setColor(QPalette.HighlightedText, QColor("#ffffff"))
+    return palette

@@ -15,6 +15,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from app.gui.main_window import MainWindow
+from app.gui.styles import FIELD_DARK_THEME, get_dark_palette
 
 
 def main():
@@ -26,6 +27,11 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("FieldOps Assistant")
     app.setOrganizationName("FieldOps Team")
+
+    # Windows yerel açık tema sızıntılarını önleyen Fusion motoru, koyu palet ve tema
+    app.setStyle("Fusion")
+    app.setPalette(get_dark_palette())
+    app.setStyleSheet(FIELD_DARK_THEME)
 
     window = MainWindow()
     window.show()
