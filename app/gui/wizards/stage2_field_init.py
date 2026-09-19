@@ -10,13 +10,14 @@ from typing import Optional
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QMessageBox, QScrollArea, QRadioButton, QButtonGroup, QCheckBox
+    QMessageBox, QScrollArea, QRadioButton, QButtonGroup, QCheckBox,
+    QLineEdit, QFileDialog
 )
 
 from app.adapters.base_adapter import BaseExecutionAdapter
 from app.adapters.local_adapter import LocalExecutionAdapter
 from app.adapters.ssh_adapter import SSHExecutionAdapter
-from app.core.models import LocationProfile, SoftwareRequirement
+from app.core.models import LocationProfile, SoftwareRequirement, TargetDeviceConfig
 from app.gui.widgets.live_console import LiveConsoleWidget
 from app.gui.widgets.touch_button import TouchButton
 
@@ -103,6 +104,117 @@ class Stage2FieldInitWidget(QWidget):
         self.lbl_mode_hint.setStyleSheet("color: #94a3b8; font-size: 12px; line-height: 1.3;")
         self.lbl_mode_hint.setWordWrap(True)
         c_box.addWidget(self.lbl_mode_hint)
+
+        # SSH Manuel Bilgi Girişi Paneli
+        self.ssh_custom_container = QWidget()
+        ssh_custom_layout = QVBoxLayout(self.ssh_custom_container)
+        ssh_custom_layout.setContentsMargins(0, 2, 0, 2)
+        ssh_custom_layout.setSpacing(8)
+
+        self.chk_custom_ssh = QCheckBox("SSH Bilgilerini Elle Gir (Özel IP / Kullanıcı / Şifre)")
+        self.chk_custom_ssh.setStyleSheet("color: #cbd5e1; font-size: 13px; font-weight: 500;")
+        self.chk_custom_ssh.toggled.connect(self._on_custom_ssh_toggled)
+        ssh_custom_layout.addWidget(self.chk_custom_ssh)
+
+        self.ssh_inputs_frame = QFrame()
+        self.ssh_inputs_frame.setStyleSheet("""
+            QFrame {
+                background-color: #0b1120;
+                border: 1px solid #1e293b;
+                border-radius: 10px;
+            }
+        """)
+        ssh_form_layout = QVBoxLayout(self.ssh_inputs_frame)
+        ssh_form_layout.setContentsMargins(14, 12, 14, 12)
+        ssh_form_layout.setSpacing(10)
+
+        # 1. Satır: Host, Port, Kullanıcı
+        row1 = QHBoxLayout()
+        row1.setSpacing(10)
+
+        host_col = QVBoxLayout()
+        host_col.setSpacing(4)
+        lbl_h = QLabel("Hedef IP / Host:")
+        lbl_h.setStyleSheet("color: #94a3b8; font-size: 12px; font-weight: 600;")
+        self.txt_ssh_host = QLineEdit()
+        self.txt_ssh_host.setPlaceholderText("192.168.1.100")
+        self.txt_ssh_host.setFixedHeight(34)
+        self.txt_ssh_host.textChanged.connect(self._on_ssh_credentials_changed)
+        host_col.addWidget(lbl_h)
+        host_col.addWidget(self.txt_ssh_host)
+        row1.addLayout(host_col, 5)
+
+        port_col = QVBoxLayout()
+        port_col.setSpacing(4)
+        lbl_p = QLabel("Port:")
+        lbl_p.setStyleSheet("color: #94a3b8; font-size: 12px; font-weight: 600;")
+        self.txt_ssh_port = QLineEdit("22")
+        self.txt_ssh_port.setPlaceholderText("22")
+        self.txt_ssh_port.setFixedHeight(34)
+        self.txt_ssh_port.textChanged.connect(self._on_ssh_credentials_changed)
+        port_col.addWidget(lbl_p)
+        port_col.addWidget(self.txt_ssh_port)
+        row1.addLayout(port_col, 2)
+
+        user_col = QVBoxLayout()
+        user_col.setSpacing(4)
+        lbl_u = QLabel("Kullanıcı Adı:")
+        lbl_u.setStyleSheet("color: #94a3b8; font-size: 12px; font-weight: 600;")
+        self.txt_ssh_user = QLineEdit("root")
+        self.txt_ssh_user.setPlaceholderText("root")
+        self.txt_ssh_user.setFixedHeight(34)
+        self.txt_ssh_user.textChanged.connect(self._on_ssh_credentials_changed)
+        user_col.addWidget(lbl_u)
+        user_col.addWidget(self.txt_ssh_user)
+        row1.addLayout(user_col, 4)
+        ssh_form_layout.addLayout(row1)
+
+        # 2. Satır: Parola, SSH Key
+        row2 = QHBoxLayout()
+        row2.setSpacing(10)
+
+        pass_col = QVBoxLayout()
+        pass_col.setSpacing(4)
+        lbl_pwd = QLabel("Parola (Opsiyonel):")
+        lbl_pwd.setStyleSheet("color: #94a3b8; font-size: 12px; font-weight: 600;")
+        self.txt_ssh_pass = QLineEdit()
+        self.txt_ssh_pass.setEchoMode(QLineEdit.Password)
+        self.txt_ssh_pass.setPlaceholderText("SSH parolası...")
+        self.txt_ssh_pass.setFixedHeight(34)
+        self.txt_ssh_pass.textChanged.connect(self._on_ssh_credentials_changed)
+        pass_col.addWidget(lbl_pwd)
+        pass_col.addWidget(self.txt_ssh_pass)
+        row2.addLayout(pass_col, 4)
+
+        key_col = QVBoxLayout()
+        key_col.setSpacing(4)
+        lbl_k = QLabel("SSH Anahtar Dosyası (Opsiyonel):")
+        lbl_k.setStyleSheet("color: #94a3b8; font-size: 12px; font-weight: 600;")
+        key_row = QHBoxLayout()
+        key_row.setSpacing(6)
+        self.txt_ssh_key = QLineEdit()
+        self.txt_ssh_key.setPlaceholderText("id_rsa, key.pem yolu...")
+        self.txt_ssh_key.setFixedHeight(34)
+        self.txt_ssh_key.textChanged.connect(self._on_ssh_credentials_changed)
+        btn_browse_key = TouchButton("Seç...", variant="ghost")
+        btn_browse_key.setFixedHeight(34)
+        btn_browse_key.setStyleSheet("font-size: 12px; padding: 2px 12px; min-height: 32px;")
+        btn_browse_key.clicked.connect(self._browse_ssh_key)
+        key_row.addWidget(self.txt_ssh_key)
+        key_row.addWidget(btn_browse_key)
+        key_col.addWidget(lbl_k)
+        key_col.addLayout(key_row)
+        row2.addLayout(key_col, 6)
+        ssh_form_layout.addLayout(row2)
+
+        lbl_custom_hint = QLabel("💡 Bu kutucuk işaretlenmediğinde plandaki tanımlı cihaz ayarlarıyla otomatik bağlanılır.")
+        lbl_custom_hint.setStyleSheet("color: #64748b; font-size: 11px;")
+        lbl_custom_hint.setWordWrap(True)
+        ssh_form_layout.addWidget(lbl_custom_hint)
+
+        self.ssh_inputs_frame.setVisible(False)
+        ssh_custom_layout.addWidget(self.ssh_inputs_frame)
+        c_box.addWidget(self.ssh_custom_container)
 
         test_row = QHBoxLayout()
         self.btn_test_conn = TouchButton("Bağlantıyı Doğrula", variant="primary")
@@ -241,6 +353,8 @@ class Stage2FieldInitWidget(QWidget):
             return
         is_local = self.radio_local.isChecked()
         mode_str = "Doğrudan Yerel Linux" if is_local else "Uzak SSH Bağlantısı"
+        if hasattr(self, "ssh_custom_container"):
+            self.ssh_custom_container.setVisible(not is_local)
         self.lbl_conn_status.setText("Test Edilmedi")
         self.lbl_conn_status.setProperty("class", "PillBadge PillWarning")
         self.lbl_conn_status.style().unpolish(self.lbl_conn_status)
@@ -252,6 +366,46 @@ class Stage2FieldInitWidget(QWidget):
             self.console.append_log(f"Bağlantı modu değiştirildi: {mode_str}", "system")
         self._update_readiness()
 
+    def _sync_ssh_inputs_from_profile(self):
+        if not self.profile or not hasattr(self, "txt_ssh_host"):
+            return
+        dev = self.profile.target_device
+        self.txt_ssh_host.setText(dev.host or "")
+        self.txt_ssh_port.setText(str(dev.port) if dev.port else "22")
+        self.txt_ssh_user.setText(dev.username or "root")
+        self.txt_ssh_pass.setText(dev.password or "")
+        self.txt_ssh_key.setText(dev.key_path or "")
+
+    def _on_custom_ssh_toggled(self, checked: bool):
+        if hasattr(self, "ssh_inputs_frame"):
+            self.ssh_inputs_frame.setVisible(checked)
+        if checked and self.profile:
+            if hasattr(self, "txt_ssh_host") and not self.txt_ssh_host.text().strip():
+                self._sync_ssh_inputs_from_profile()
+        self._on_ssh_credentials_changed()
+        mode_desc = "Elle girilen özel SSH bilgileri" if checked else "Plandaki varsayılan cihaz ayarları"
+        if hasattr(self, "console"):
+            self.console.append_log(f"SSH Bağlantı Kaynağı: {mode_desc}", "system")
+
+    def _on_ssh_credentials_changed(self):
+        if hasattr(self, "lbl_conn_status"):
+            self.lbl_conn_status.setText("Test Edilmedi")
+            self.lbl_conn_status.setProperty("class", "PillBadge PillWarning")
+            self.lbl_conn_status.style().unpolish(self.lbl_conn_status)
+            self.lbl_conn_status.style().polish(self.lbl_conn_status)
+        self.adapter = None
+        self._update_readiness()
+
+    def _browse_ssh_key(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "SSH Özel Anahtar Dosyasını Seçin",
+            "",
+            "Tüm Dosyalar (*.*);;Anahtar Dosyaları (*.pem *.key id_rsa*)"
+        )
+        if file_path:
+            self.txt_ssh_key.setText(file_path)
+
     def load_session(self, profile: LocationProfile):
         self.profile = profile
         self.adapter = None
@@ -259,6 +413,9 @@ class Stage2FieldInitWidget(QWidget):
         self._sw_pending = [req.name for req in profile.software_requirements] if profile else []
         if hasattr(self, "chk_force_init"):
             self.chk_force_init.setChecked(False)
+        if hasattr(self, "chk_custom_ssh"):
+            self.chk_custom_ssh.setChecked(False)
+        self._sync_ssh_inputs_from_profile()
 
         self.lbl_conn_status.setText("Test Edilmedi")
         self.lbl_conn_status.setProperty("class", "PillBadge PillWarning")
@@ -280,14 +437,40 @@ class Stage2FieldInitWidget(QWidget):
         if self.radio_local.isChecked():
             return LocalExecutionAdapter()
         else:
-            return SSHExecutionAdapter(self.profile.target_device)
+            if hasattr(self, "chk_custom_ssh") and self.chk_custom_ssh.isChecked() and self.profile:
+                host = self.txt_ssh_host.text().strip() or self.profile.target_device.host
+                try:
+                    port = int(self.txt_ssh_port.text().strip())
+                except ValueError:
+                    port = self.profile.target_device.port
+                username = self.txt_ssh_user.text().strip() or self.profile.target_device.username
+                password = self.txt_ssh_pass.text() if self.txt_ssh_pass.text() else self.profile.target_device.password
+                key_path = self.txt_ssh_key.text().strip() if self.txt_ssh_key.text().strip() else self.profile.target_device.key_path
+
+                custom_config = TargetDeviceConfig(
+                    host=host,
+                    port=port,
+                    username=username,
+                    password=password,
+                    key_path=key_path,
+                    remote_config_path=self.profile.target_device.remote_config_path,
+                    remote_log_dir=self.profile.target_device.remote_log_dir
+                )
+                return SSHExecutionAdapter(custom_config)
+            else:
+                return SSHExecutionAdapter(self.profile.target_device)
 
     def _test_connection(self):
         if not self.profile:
             return
 
         self.adapter = self._get_active_adapter()
-        self.console.append_log("Bağlantı doğrulanıyor...", "info")
+        if isinstance(self.adapter, SSHExecutionAdapter):
+            cfg = self.adapter.config
+            source_lbl = "Elle Girilen" if (hasattr(self, "chk_custom_ssh") and self.chk_custom_ssh.isChecked()) else "Plandaki"
+            self.console.append_log(f"SSH Bağlantısı doğrulanıyor ({source_lbl}): {cfg.username}@{cfg.host}:{cfg.port}...", "info")
+        else:
+            self.console.append_log("Doğrudan Yerel bağlantı doğrulanıyor...", "info")
 
         success, msg = self.adapter.test_connection()
         if success:
