@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.asset_manager import SoftwareAssetManager
+from app.core.equipment_manager import EquipmentCatalogManager
 from app.core.mission_context import MissionManager
 from app.core.models import LocationProfile, MissionSession, StoredSoftwareInfo
 from app.core.profile_manager import ProfileManager
@@ -68,12 +69,14 @@ class MissionSelectionWidget(QWidget):
         profile_manager: ProfileManager,
         mission_manager: MissionManager,
         asset_manager: Optional[SoftwareAssetManager] = None,
+        equipment_manager: Optional[EquipmentCatalogManager] = None,
         parent=None
     ):
         super().__init__(parent)
         self.profile_manager = profile_manager
         self.mission_manager = mission_manager
         self.asset_manager = asset_manager or SoftwareAssetManager()
+        self.equipment_manager = equipment_manager or EquipmentCatalogManager()
 
         self.profiles: List[LocationProfile] = []
         self.saved_sessions: List[MissionSession] = []
@@ -719,7 +722,13 @@ class MissionSelectionWidget(QWidget):
 
     def _on_create_location_clicked(self):
         from app.gui.widgets.profile_editor_dialog import ProfileEditorDialog
-        dlg = ProfileEditorDialog(self.profile_manager, profile_to_edit=None, asset_manager=self.asset_manager, parent=self)
+        dlg = ProfileEditorDialog(
+            self.profile_manager,
+            profile_to_edit=None,
+            asset_manager=self.asset_manager,
+            equipment_manager=self.equipment_manager,
+            parent=self
+        )
         if dlg.exec() == QDialog.Accepted and dlg.saved_profile_id:
             self.refresh_data()
             idx = self.loc_combo.findData(dlg.saved_profile_id)
@@ -738,7 +747,13 @@ class MissionSelectionWidget(QWidget):
             return
 
         from app.gui.widgets.profile_editor_dialog import ProfileEditorDialog
-        dlg = ProfileEditorDialog(self.profile_manager, profile_to_edit=profile, asset_manager=self.asset_manager, parent=self)
+        dlg = ProfileEditorDialog(
+            self.profile_manager,
+            profile_to_edit=profile,
+            asset_manager=self.asset_manager,
+            equipment_manager=self.equipment_manager,
+            parent=self
+        )
         if dlg.exec() == QDialog.Accepted and dlg.saved_profile_id:
             self.refresh_data()
             idx = self.loc_combo.findData(dlg.saved_profile_id)

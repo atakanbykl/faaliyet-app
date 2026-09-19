@@ -184,6 +184,47 @@ def test_mission_manager_saved_sessions(tmp_path):
     assert loaded.stage1_completed
 
 
+def test_equipment_catalog_manager(tmp_path):
+    from app.core.equipment_manager import EquipmentCatalogManager
+    from app.core.models import EquipmentItem
+
+    catalog_file = tmp_path / "equipment_catalog.json"
+    em = EquipmentCatalogManager(catalog_file=catalog_file)
+
+    # 1. Varsayılan ekipmanlar yüklenmiş olmalı
+    items = em.get_items()
+    assert len(items) >= 5
+    assert catalog_file.exists()
+
+    # 2. Arama ve filtreleme
+    search_res = em.get_items(search_query="ethernet")
+    assert len(search_res) >= 1
+    assert "ethernet" in search_res[0].name.lower()
+
+    # 3. Yeni ekipman ekleme
+    assert em.add_item("Özel Test Multimetresi", "Kalibre edilmiş cihaz", category="Donanım & Test")
+    found = [it for it in em.get_items() if it.name == "Özel Test Multimetresi"]
+    assert len(found) == 1
+    assert found[0].description == "Kalibre edilmiş cihaz"
+
+    # 4. Ekipman silme
+    assert em.remove_item("Özel Test Multimetresi")
+    assert not any(it.name == "Özel Test Multimetresi" for it in em.get_items())
+
+    # 5. register_items (elle girilenleri havuza otomatik kaydetme)
+    manual_items = [
+        EquipmentItem(id="eq_new1", name="Saha Termal Kamerası", description="FLIR E4", is_mandatory=True),
+        EquipmentItem(id="eq_new2", name="Fiber Optik Temizleme Çubuğu", description="", is_mandatory=False),
+    ]
+    em.register_items(manual_items)
+    assert any(it.name == "Saha Termal Kamerası" for it in em.get_items())
+    assert any(it.name == "Fiber Optik Temizleme Çubuğu" for it in em.get_items())
+
+    # 6. Yeni instance yüklediğinde kalıcı olduğunu teyit etme
+    em2 = EquipmentCatalogManager(catalog_file=catalog_file)
+    assert any(it.name == "Saha Termal Kamerası" for it in em2.get_items())
+
+
 if __name__ == "__main__":
     import tempfile
     test_functions = [
@@ -193,6 +234,7 @@ if __name__ == "__main__":
         test_config_diff_engine,
         test_local_adapter_compression,
         test_mission_manager_saved_sessions,
+        test_equipment_catalog_manager,
     ]
     for fn in test_functions:
         with tempfile.TemporaryDirectory() as td:

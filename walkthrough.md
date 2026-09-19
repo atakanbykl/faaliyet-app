@@ -82,6 +82,12 @@ FieldOps Assistant; saha görevlerinde kurum içi yazılım ve donanımların lo
   - **Kesintisiz Manuel Düzenleme & Elle Giriş**: `✏️ Formu Temizle (Manuel Giriş)` butonuyla veya doğrudan formdaki alanlar üzerinden dileyen operatör tamamen elle özel bir paket yazabilir. Otomatik doldurulan her alan istendiğinde elle serbestçe değiştirilebilir.
   - Düzenleme sekmesinde ayrıca doğrudan boş kart açmak için `✏️ Hızlı Boş Kart` ve her kart üzerinde `📦 Hafızadan Doldur...` butonu yer alır.
   - **Ergonomik Dikey Kaydırma Düzeni (`QScrollArea`)**: Farklı ekran çözünürlüklerinde form alanlarının ve paket listesinin birbirine girmesini engellemek için tüm pencere gövdesi akıcı bir dikey kaydırma alanı (`body_scroll`) içine alınmıştır. Alt aksiyon butonları (`Vazgeç` / `✓ Paketi Ekle`) pencerenin tabanına sabitlenmiş olup her an erişilebilirdir.
+- **Kalıcı Saha Ekipmanları Havuzu & Hızlı Ekleme (`EquipmentCatalogManager` & `EquipmentCatalogDialog`)**:
+  - **Kalıcı Ekipman Havuzu (`data/equipment_catalog.json`)**: Saha operasyonlarında kullanılan kablolar, adaptörler, ölçüm cihazları ve KKD ekipmanları kategorili ve kalıcı bir JSON havuzunda saklanır. Havuzda yalnızca malzeme adı, açıklama ve kategori tutulur; malzemenin zorunlu olup olmadığı havuzda tutulmaz.
+  - **Hızlı ve Çoklu Seçim Modalı (`EquipmentCatalogDialog`)**: "🎒 Saha Ekipmanları" sekmesindeki `📦 Hafızadan Malzeme Ekle...` butonu ile açılan pencerede arama, kategori filtresi, tekli (`➕ Ekle`) ve toplu (`✓ Seçilenleri Profile Ekle`) malzeme aktarımı yapılabilir. Bu ekranda zorunluluk rozetleri veya seçimleri gösterilmez.
+  - **Havuza Ekleme ve Çıkarma**: Operatör havuz modalından yeni malzeme tanımlayıp kalıcı olarak kaydedebilir (`💾 Havuza Kaydet & Seç`) veya listedeki `🗑` butonuyla havuzdan silebilir.
+  - **Faaliyet Bazında Elle Zorunluluk Seçimi**: Ekipmanın zorunlu (`is_mandatory`) olup olmadığı yalnızca faaliyet profili planlanırken "Saha Ekipmanları" listesindeki onay kutusundan elle belirlenir; havuz veritabanına zorunluluk kaydedilmez.
+  - **Manuel Girişlerin Otomatik Hafızaya Alınması**: Profil kaydedildiğinde, kullanıcının `✏️ Boş Satır Ekle` ile elle girdiği veya değiştirdiği yeni malzemelerin isim ve açıklamaları otomatik olarak `EquipmentCatalogManager` tarafından havuz veritabanına tescil edilir ve gelecekteki tüm profillerde anında seçilebilir hale gelir.
 - **4 Sekmeli Zengin Arayüz**: Genel & Cihaz Ayarları, Yazılım Paketleri, Saha Ekipmanları ve Referans Konfigürasyon editörü.
 
 ---
@@ -180,6 +186,7 @@ Tüm birim testleri ve GUI etkileşim doğrulamaları eksiksiz çalıştırılm�
 [OK] test_config_diff_engine passed
 [OK] test_local_adapter_compression passed
 [OK] test_mission_manager_saved_sessions passed
+[OK] test_equipment_catalog_manager passed (Katalog yükleme, arama, ekleme, silme ve otomatik tescil)
 All core tests passed successfully!
 
 MainWindow loaded successfully.
@@ -189,5 +196,7 @@ Page Scroll Area present: True (Dikey Kaydırma Aktif)
 Horizontal Scroll Policy: True (Yatay Kaydırma Kesinlikle Kapalı)
 App groups rendered: 2 (radar_control, yardimci_araclar)
 Collapsible Widget Verification: PASSED (Default daraltılmış, tıklayarak açılma ve buton izolasyonu doğrulandı)
+EquipmentCatalogDialog Verification: PASSED (11 hazır ekipman, filtreleme, çoklu seçim ve havuza ekleme/çıkarma)
+Auto-registration of manually typed equipment: PASSED (Profil kaydedildiğinde elle girilen malzeme havuza işlendi)
 ```
 

@@ -1,0 +1,57 @@
+[
+  {
+    "name": "12V Araç Çakmaklık Güç Kablosu",
+    "description": "3 metre sigortalı araç içi güç besleme ara kablosu",
+    "category": "Güç & Enerji"
+  },
+  {
+    "name": "24V Saha Güç Adaptörü & Akü",
+    "description": "Endüstriyel DIN ray veya masaüstü yedek DC güç kaynağı",
+    "category": "Güç & Enerji"
+  },
+  {
+    "name": "4G Yedek SIM Kart",
+    "description": "Statik IP tanımlı operatör saha veri hattı",
+    "category": "Kablo & Bağlantı"
+  },
+  {
+    "name": "Hassas Tornavida & Alyan Takımı",
+    "description": "Yalıtımlı gövde açma ve montaj alyan seti",
+    "category": "Donanım & Test"
+  },
+  {
+    "name": "Manyetik Araç Üstü GPS Anteni",
+    "description": "Aktif SMA konnektörlü yüksek kazançlı GPS/GNSS anteni",
+    "category": "Donanım & Test"
+  },
+  {
+    "name": "RJ45 - DB9 Dişi Konsol Kablosu",
+    "description": "Yönlendirici ve switch konsol erişim ara kablosu",
+    "category": "Kablo & Bağlantı"
+  },
+  {
+    "name": "Saha Multimetresi ve Probları",
+    "description": "True-RMS dijital multimetre ve yüksek gerilim probları",
+    "category": "Donanım & Test"
+  },
+  {
+    "name": "Termal Macun & İletken Temizleme Kiti",
+    "description": "İşlemci ve soğutucu blok bakım kiti",
+    "category": "Donanım & Test"
+  },
+  {
+    "name": "USB-RS232 Seri Port Dönüştürücü",
+    "description": "FTDI yongalı endüstriyel seri konsol adaptörü",
+    "category": "Kablo & Bağlantı"
+  },
+  {
+    "name": "Yansıtıcı Saha Yeleği & Baret",
+    "description": "EN ISO 20471 standartlarında yüksek görünürlüklü KKD",
+    "category": "İş Güvenliği & KKD"
+  },
+  {
+    "name": "Yedek Ethernet CAT6 Kablosu (15m)",
+    "description": "Mavi korumalı blendajlı CAT6 ağ kablosu",
+    "category": "Kablo & Bağlantı"
+  }
+]

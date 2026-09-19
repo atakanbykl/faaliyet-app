@@ -19,11 +19,13 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.asset_manager import SoftwareAssetManager
+from app.core.equipment_manager import EquipmentCatalogItem, EquipmentCatalogManager
 from app.core.models import (
     EquipmentItem, LocationProfile, SoftwareRequirement,
     StoredSoftwareInfo, TargetDeviceConfig
 )
 from app.core.profile_manager import ProfileManager
+from app.gui.widgets.equipment_catalog_dialog import EquipmentCatalogDialog
 from app.gui.widgets.touch_button import TouchButton
 
 
@@ -576,7 +578,12 @@ class SoftwareReqItemCard(QFrame):
 class EquipmentItemCard(QFrame):
     """Malzeme kontrol listesi satırı."""
 
-    def __init__(self, item: Optional[EquipmentItem] = None, on_delete=None, parent=None):
+    def __init__(
+        self,
+        item: Optional[EquipmentItem] = None,
+        on_delete=None,
+        parent=None
+    ):
         super().__init__(parent)
         self.on_delete = on_delete
         self.item_id = item.id if item else f"eq_{int(id(self)) % 10000}"
@@ -637,12 +644,14 @@ class ProfileEditorDialog(QDialog):
         profile_manager: ProfileManager,
         profile_to_edit: Optional[LocationProfile] = None,
         asset_manager: Optional[SoftwareAssetManager] = None,
+        equipment_manager: Optional[EquipmentCatalogManager] = None,
         parent=None
     ):
         super().__init__(parent)
         self.profile_manager = profile_manager
         self.profile_to_edit = profile_to_edit
         self.asset_manager = asset_manager or SoftwareAssetManager()
+        self.equipment_manager = equipment_manager or EquipmentCatalogManager()
         self.is_edit_mode = profile_to_edit is not None
         self.saved_profile_id: Optional[str] = None
 
@@ -911,11 +920,19 @@ class ProfileEditorDialog(QDialog):
         header_row.addWidget(desc)
         header_row.addStretch()
 
-        btn_add = TouchButton("+ Yeni Malzeme Ekle", variant="primary")
-        btn_add.setFixedHeight(34)
-        btn_add.setStyleSheet("min-height: 32px; padding: 2px 14px; font-size: 12px; font-weight: 700;")
-        btn_add.clicked.connect(lambda: self._add_equipment_card())
-        header_row.addWidget(btn_add)
+        btn_pool = TouchButton("📦 Hafızadan Malzeme Ekle...", variant="primary")
+        btn_pool.setFixedHeight(34)
+        btn_pool.setStyleSheet("min-height: 32px; padding: 2px 14px; font-size: 12.5px; font-weight: 700;")
+        btn_pool.setToolTip("Hafızadaki ekipman havuzundan arayıp tekli veya çoklu malzeme seçerek profile ekleyin")
+        btn_pool.clicked.connect(self._open_equipment_catalog_dialog)
+        header_row.addWidget(btn_pool)
+
+        btn_manual = TouchButton("✏️ Boş Satır Ekle", variant="ghost")
+        btn_manual.setFixedHeight(34)
+        btn_manual.setStyleSheet("min-height: 32px; padding: 2px 12px; font-size: 12px;")
+        btn_manual.setToolTip("Doğrudan elle yazabileceğiniz boş bir malzeme satırı ekler")
+        btn_manual.clicked.connect(lambda: self._add_equipment_card())
+        header_row.addWidget(btn_manual)
         layout.addLayout(header_row)
 
         scroll = QScrollArea()
@@ -998,6 +1015,22 @@ class ProfileEditorDialog(QDialog):
             self.sw_cards.remove(card)
             self.sw_list_layout.removeWidget(card)
             card.deleteLater()
+
+    def _open_equipment_catalog_dialog(self):
+        existing_names = [
+            card.txt_name.text().strip()
+            for card in self.equip_cards
+            if card.txt_name.text().strip()
+        ]
+        dlg = EquipmentCatalogDialog(
+            self.equipment_manager,
+            existing_item_names=existing_names,
+            parent=self
+        )
+        if dlg.exec():
+            items = dlg.get_selected_items()
+            for it in items:
+                self._add_equipment_card(it)
 
     def _add_equipment_card(self, item: Optional[EquipmentItem] = None):
         card = EquipmentItemCard(item, on_delete=self._remove_equipment_card)
@@ -1133,6 +1166,13 @@ class ProfileEditorDialog(QDialog):
         # Yazılım ve Malzeme listelerini topla
         sw_list = [card.to_model() for card in self.sw_cards if card.to_model() is not None]
         eq_list = [card.to_model() for card in self.equip_cards if card.to_model() is not None]
+
+        # Elle yazılmış veya profildeki tüm malzemeleri kalıcı ekipman havuzuna otomatik kaydet
+        if eq_list:
+            try:
+                self.equipment_manager.register_items(eq_list)
+            except Exception as ex:
+                print(f"[ProfileEditorDialog] Ekipman havuzuna otomatik kaydetme uyarısı: {ex}")
 
         # Konfigürasyon metni
         cfg_content = self.txt_baseline_config.toPlainText().strip()
