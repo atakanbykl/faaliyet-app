@@ -195,6 +195,12 @@ class EquipmentCatalogDialog(QDialog):
         form_row2.addWidget(btn_save_new)
 
         new_card_layout.addLayout(form_row2)
+        
+        self.lbl_new_error = QLabel()
+        self.lbl_new_error.setStyleSheet("color: #f87171; font-size: 11.5px; font-weight: 600; padding-top: 2px;")
+        self.lbl_new_error.setVisible(False)
+        new_card_layout.addWidget(self.lbl_new_error)
+
         self.scroll_layout.addWidget(new_card)
         self.scroll_layout.addStretch(1)
 
@@ -385,10 +391,12 @@ class EquipmentCatalogDialog(QDialog):
         """Kullanıcının formdan girdiği yeni ekipmanı havuza kaydeder."""
         name = self.txt_new_name.text().strip()
         if not name:
-            QMessageBox.warning(self, "Eksik Bilgi", "Lütfen malzeme adını giriniz.")
+            self.lbl_new_error.setText("✕ Lütfen malzeme adını giriniz.")
+            self.lbl_new_error.setVisible(True)
             self.txt_new_name.setFocus()
             return
 
+        self.lbl_new_error.setVisible(False)
         desc = self.txt_new_desc.text().strip()
         cat = self.combo_new_cat.currentText().strip() or "Genel"
 

@@ -335,30 +335,7 @@ class Stage1PreflightWidget(QWidget):
         if not self.current_profile:
             return
 
-        checklist_ok = self.checklist_widget.are_all_mandatory_checked() if self.checklist_widget else False
-        if not checklist_ok:
-            missing = self.checklist_widget.get_missing_mandatory_items() if self.checklist_widget else []
-            missing_text = "\n• " + "\n• ".join([item.name for item in missing])
-            reply = QMessageBox.warning(
-                self,
-                "Zorunlu Ekipman Eksik (Force Geçiş)",
-                f"DİKKAT: Aşağıdaki zorunlu malzemeler işaretlenmedi:{missing_text}\n\n"
-                "Bu malzemeler eksik olarak sahaya çıkmak istediğinizden emin misiniz?\n"
-                "(Tüm sorumluluk saha operatörüne aittir.)",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply != QMessageBox.Yes:
-                return
-
+        # Force durumu ve buton stili _update_readiness tarafından zaten yönetiliyor.
+        # Operatörün kararı buton üzerinden teyit edildiği için akış kesintisiz ilerletilir.
         op_name = self.operator_name or "Saha_Operatoru"
-        reply = QMessageBox.question(
-            self,
-            "1. Aşamayı Tamamla",
-            f"'{self.current_profile.name}' hazırlıkları onaylandı.\n"
-            "Faaliyet lokasyonuna yola çıkılıyor mu?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
-        )
-        if reply == QMessageBox.Yes:
-            self.stage_completed.emit(self.current_profile, op_name)
+        self.stage_completed.emit(self.current_profile, op_name)

@@ -1206,11 +1206,6 @@ class ProfileEditorDialog(QDialog):
         try:
             saved_path = self.profile_manager.save_profile(profile)
             self.saved_profile_id = profile.id
-            QMessageBox.information(
-                self,
-                "Profil Kaydedildi",
-                f"'{profile.name}' lokasyon profili başarıyla kaydedildi:\n{saved_path.name}"
-            )
             self.accept()
         except Exception as e:
             self.status_lbl.setText(f"Kaydetme hatası: {e}")

@@ -243,6 +243,12 @@ class MissionSelectionWidget(QWidget):
         action_row.addLayout(btn_col, 5)
 
         new_card_layout.addLayout(action_row)
+        
+        self.lbl_new_error = QLabel()
+        self.lbl_new_error.setStyleSheet("color: #f87171; font-size: 12px; font-weight: 600; padding-top: 4px;")
+        self.lbl_new_error.setVisible(False)
+        new_card_layout.addWidget(self.lbl_new_error)
+
         new_card_layout.addStretch()
 
         top_row.addWidget(new_card, 5)
@@ -715,6 +721,8 @@ class MissionSelectionWidget(QWidget):
             QMessageBox.warning(self, "Uyarı", f"'{folder}' klasörü bulunamadı!")
 
     def _on_profile_preview(self):
+        if hasattr(self, "lbl_new_error"):
+            self.lbl_new_error.setVisible(False)
         profile_id = self.loc_combo.currentData()
         if not profile_id:
             return
@@ -723,6 +731,8 @@ class MissionSelectionWidget(QWidget):
             self.loc_preview_lbl.setText(f"Hedef: {p.target_device.username}@{p.target_device.host} &nbsp;•&nbsp; {p.description}")
 
     def _on_create_location_clicked(self):
+        if hasattr(self, "lbl_new_error"):
+            self.lbl_new_error.setVisible(False)
         from app.gui.widgets.profile_editor_dialog import ProfileEditorDialog
         dlg = ProfileEditorDialog(
             self.profile_manager,
@@ -740,14 +750,17 @@ class MissionSelectionWidget(QWidget):
     def _on_edit_location_clicked(self):
         profile_id = self.loc_combo.currentData()
         if not profile_id:
-            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek istediğiniz bir lokasyon seçin.")
+            self.lbl_new_error.setText("✕ Lütfen düzenlemek istediğiniz bir lokasyon seçin.")
+            self.lbl_new_error.setVisible(True)
             return
 
         profile = self.profile_manager.load_profile(profile_id)
         if not profile:
-            QMessageBox.critical(self, "Hata", f"'{profile_id}' lokasyon profili bulunamadı!")
+            self.lbl_new_error.setText(f"✕ '{profile_id}' lokasyon profili bulunamadı!")
+            self.lbl_new_error.setVisible(True)
             return
 
+        self.lbl_new_error.setVisible(False)
         from app.gui.widgets.profile_editor_dialog import ProfileEditorDialog
         dlg = ProfileEditorDialog(
             self.profile_manager,
@@ -768,30 +781,23 @@ class MissionSelectionWidget(QWidget):
             w.set_selected(w.session.session_id == session.session_id)
 
     def _on_start_new_clicked(self):
+        self.lbl_new_error.setVisible(False)
         profile_id = self.loc_combo.currentData()
         if not profile_id:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir hedef lokasyon seçiniz.")
+            self.lbl_new_error.setText("✕ Lütfen bir hedef lokasyon seçiniz.")
+            self.lbl_new_error.setVisible(True)
             return
 
         profile = self.profile_manager.load_profile(profile_id)
         if not profile:
-            QMessageBox.critical(self, "Hata", "Seçilen lokasyon profili yüklenemedi!")
+            self.lbl_new_error.setText("✕ Seçilen lokasyon profili yüklenemedi!")
+            self.lbl_new_error.setVisible(True)
             return
 
         operator_name = self.op_input.text().strip() or "Saha_Operatoru"
 
-        reply = QMessageBox.question(
-            self,
-            "Yeni Faaliyet Başlat",
-            f"Lokasyon: {profile.name}\n"
-            f"Operatör: {operator_name}\n\n"
-            "Yeni faaliyet kaydı açılsın ve 1. Aşama başlatılsın mı?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
-        )
-
-        if reply == QMessageBox.Yes:
-            self.start_new_mission.emit(profile, operator_name)
+        # Pop-up kaldırıldı, akış doğrudan ve kesintisiz başlatılıyor
+        self.start_new_mission.emit(profile, operator_name)
 
     def _resume_specific_session(self, session: MissionSession):
         profile = self.profile_manager.load_profile(session.location_id)
