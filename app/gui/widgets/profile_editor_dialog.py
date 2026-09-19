@@ -29,6 +29,76 @@ from app.gui.widgets.equipment_catalog_dialog import EquipmentCatalogDialog
 from app.gui.widgets.touch_button import TouchButton
 
 
+class ScannedSoftwareCard(QFrame):
+    """Hafızadaki hazır yazılımları gösteren tıklanabilir kompakt seçim kartı."""
+
+    def __init__(self, item: StoredSoftwareInfo, on_clicked, parent=None):
+        super().__init__(parent)
+        self.item = item
+        self.on_clicked = on_clicked
+        self._is_selected = False
+        self.setCursor(Qt.PointingHandCursor)
+        self._update_style()
+        self._setup_ui()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.on_clicked(self.item)
+        super().mousePressEvent(event)
+
+    def set_selected(self, selected: bool):
+        self._is_selected = selected
+        self._update_style()
+
+    def _update_style(self):
+        if self._is_selected:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #132238;
+                    border: 1.5px solid #3b82f6;
+                    border-radius: 8px;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #0b1120;
+                    border: 1px solid #1e293b;
+                    border-radius: 8px;
+                }
+                QFrame:hover {
+                    border-color: #3b82f6;
+                    background-color: #0d1527;
+                }
+            """)
+
+    def _setup_ui(self):
+        row = QHBoxLayout(self)
+        row.setContentsMargins(12, 9, 12, 9)
+        row.setSpacing(12)
+
+        name_lbl = QLabel(f"<b>{self.item.app_name}</b> <span style='color: #38bdf8;'>({self.item.version_name})</span>")
+        name_lbl.setStyleSheet("font-size: 13px; color: #f8fafc;")
+        name_lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        row.addWidget(name_lbl)
+
+        file_lbl = QLabel(f"<code>{self.item.primary_package or 'Paket Dosyası Yok'}</code>")
+        file_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        file_lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        row.addWidget(file_lbl)
+
+        row.addStretch()
+
+        if not self.item.is_empty:
+            badge = QLabel(f"✓ {self.item.formatted_size}")
+            badge.setProperty("class", "PillBadge PillSuccess")
+        else:
+            badge = QLabel("Boş")
+            badge.setProperty("class", "PillBadge PillWarning")
+        badge.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        row.addWidget(badge)
+
+
 class AddSoftwareDialog(QDialog):
     """Yeni yazılım paketi ekleme ve yapılandırma modalı.
     
@@ -48,17 +118,17 @@ class AddSoftwareDialog(QDialog):
         self.initial_req = initial_req
         self.result_requirement: Optional[SoftwareRequirement] = None
         self.scanned_items: List[StoredSoftwareInfo] = self.asset_manager.scan_available_softwares()
+        self.scanned_card_widgets: List[ScannedSoftwareCard] = []
+        self._is_adv_expanded: bool = False
 
         self.setWindowTitle("Yazılım Paketi Ekle & Yapılandır")
         self.resize(760, 680)
         self.setMinimumSize(600, 480)
         self._setup_ui()
 
+        # Default olarak ilk açıldığında manuel giriş seçili gelir
         if initial_req:
             self._fill_form_from_req(initial_req)
-        elif self.scanned_items:
-            first_ready = next((it for it in self.scanned_items if not it.is_empty), self.scanned_items[0])
-            self._select_scanned_item(first_ready)
         else:
             self._set_manual_mode()
 
@@ -147,56 +217,14 @@ class AddSoftwareDialog(QDialog):
         scanned_list_layout.setContentsMargins(0, 2, 0, 2)
         scanned_list_layout.setSpacing(6)
 
+        self.scanned_card_widgets = []
         if self.scanned_items:
             for it in self.scanned_items:
-                item_frame = QFrame()
-                item_frame.setStyleSheet("""
-                    QFrame {
-                        background-color: #0b1120;
-                        border: 1px solid #1e293b;
-                        border-radius: 8px;
-                        padding: 2px 4px;
-                    }
-                    QFrame:hover {
-                        border-color: #3b82f6;
-                        background-color: #0d1527;
-                    }
-                """)
-                row = QHBoxLayout(item_frame)
-                row.setContentsMargins(10, 8, 10, 8)
-                row.setSpacing(10)
-
-                icon = QLabel("")
-                icon.setStyleSheet("font-size: 14px;")
-                row.addWidget(icon)
-
-                name_lbl = QLabel(f"<b>{it.app_name}</b> <span style='color: #38bdf8;'>({it.version_name})</span>")
-                name_lbl.setStyleSheet("font-size: 13px; color: #f8fafc;")
-                row.addWidget(name_lbl)
-
-                file_lbl = QLabel(f"<code>{it.primary_package or 'Paket Dosyası Yok'}</code>")
-                file_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
-                row.addWidget(file_lbl)
-
-                row.addStretch()
-
-                if not it.is_empty:
-                    badge = QLabel(f"✓ {it.formatted_size}")
-                    badge.setProperty("class", "PillBadge PillSuccess")
-                else:
-                    badge = QLabel("Boş")
-                    badge.setProperty("class", "PillBadge PillWarning")
-                row.addWidget(badge)
-
-                btn_select = TouchButton("Seç ➔", variant="ghost")
-                btn_select.setFixedHeight(28)
-                btn_select.setStyleSheet("min-height: 26px; padding: 2px 10px; font-size: 12px;")
-                btn_select.clicked.connect(lambda _, item=it: self._select_scanned_item(item))
-                row.addWidget(btn_select)
-
-                scanned_list_layout.addWidget(item_frame)
+                card = ScannedSoftwareCard(it, on_clicked=self._select_scanned_item)
+                self.scanned_card_widgets.append(card)
+                scanned_list_layout.addWidget(card)
         else:
-            no_item_lbl = QLabel("ℹ️ <b>softwares/</b> dizininde henüz kayıtlı paket tespit edilemedi.<br>Aşağıdaki formdan manuel olarak paket tanımlayabilirsiniz.")
+            no_item_lbl = QLabel("softwares/ dizininde henüz kayıtlı paket tespit edilemedi.<br>Aşağıdaki formdan manuel olarak paket tanımlayabilirsiniz.")
             no_item_lbl.setStyleSheet("color: #94a3b8; font-size: 12px; padding: 12px;")
             no_item_lbl.setAlignment(Qt.AlignCenter)
             scanned_list_layout.addWidget(no_item_lbl)
@@ -267,6 +295,21 @@ class AddSoftwareDialog(QDialog):
         row_file.addWidget(btn_browse_file)
         form_layout.addLayout(row_file)
 
+        # Gelişmiş Parametreler (Progressive Disclosure - Akordiyon Yapısı)
+        self.btn_toggle_adv = TouchButton("▶ Gelişmiş Parametreleri Göster (Kurulum Dizini, Servis, Komut)", variant="ghost")
+        self.btn_toggle_adv.setFixedHeight(34)
+        self.btn_toggle_adv.setStyleSheet(
+            "min-height: 32px; font-size: 12px; font-weight: 600; text-align: left; "
+            "padding: 4px 12px; color: #38bdf8; border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 8px;"
+        )
+        self.btn_toggle_adv.clicked.connect(self._toggle_advanced_settings)
+        form_layout.addWidget(self.btn_toggle_adv)
+
+        self.adv_container = QWidget()
+        adv_layout = QVBoxLayout(self.adv_container)
+        adv_layout.setContentsMargins(0, 4, 0, 0)
+        adv_layout.setSpacing(10)
+
         # Satır 3: Hedef Kurulum Yolu & Systemd Servisi
         row3 = QHBoxLayout()
         row3.setSpacing(12)
@@ -292,15 +335,18 @@ class AddSoftwareDialog(QDialog):
         col_srv.addWidget(self.txt_service)
         row3.addLayout(col_srv, 1)
 
-        form_layout.addLayout(row3)
+        adv_layout.addLayout(row3)
 
         # Satır 4: Sürüm Kontrol Komutu
         lbl_cmd = QLabel("Cihazda Sürüm Kontrol Komutu:")
         lbl_cmd.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
         self.txt_cmd = QLineEdit("/opt/app/bin/app --version")
         self.txt_cmd.setStyleSheet("min-height: 36px;")
-        form_layout.addWidget(lbl_cmd)
-        form_layout.addWidget(self.txt_cmd)
+        adv_layout.addWidget(lbl_cmd)
+        adv_layout.addWidget(self.txt_cmd)
+
+        self.adv_container.setVisible(False)
+        form_layout.addWidget(self.adv_container)
 
         scroll_content_layout.addWidget(form_card)
         scroll_content_layout.addStretch(1)
@@ -331,7 +377,17 @@ class AddSoftwareDialog(QDialog):
 
         layout.addLayout(bottom_bar)
 
+    def _toggle_advanced_settings(self):
+        self._is_adv_expanded = not self._is_adv_expanded
+        self.adv_container.setVisible(self._is_adv_expanded)
+        if self._is_adv_expanded:
+            self.btn_toggle_adv.setText("▼ Gelişmiş Parametreleri Gizle (Kurulum Dizini, Servis, Komut)")
+        else:
+            self.btn_toggle_adv.setText("▶ Gelişmiş Parametreleri Göster (Kurulum Dizini, Servis, Komut)")
+
     def _select_scanned_item(self, item: StoredSoftwareInfo):
+        for card in getattr(self, "scanned_card_widgets", []):
+            card.set_selected(card.item == item)
         for i in range(1, self.combo_scanned.count()):
             if self.combo_scanned.itemData(i) == item:
                 self.combo_scanned.blockSignals(True)
@@ -345,15 +401,31 @@ class AddSoftwareDialog(QDialog):
         if data is None:
             self._set_manual_mode()
         else:
-            self._fill_form_from_scanned(data)
+            self._select_scanned_item(data)
 
     def _set_manual_mode(self):
+        for card in getattr(self, "scanned_card_widgets", []):
+            card.set_selected(False)
         self.combo_scanned.blockSignals(True)
         self.combo_scanned.setCurrentIndex(0)
         self.combo_scanned.blockSignals(False)
-        self.lbl_source_status.setText(" Manuel Mod: İstediğiniz paket bilgilerini aşağıdaki formdan serbestçe tanımlayabilirsiniz.")
+
+        # Paket parametreleri alanlarını temizle
+        self.txt_name.clear()
+        self.txt_version.setText("1.0.0")
+        self.txt_file.clear()
+        self.txt_path.setText("/opt/app")
+        self.txt_service.clear()
+        self.txt_cmd.setText("/opt/app/bin/app --version")
+
+        # Gelişmiş ayarları daralt
+        if getattr(self, "_is_adv_expanded", False):
+            self._toggle_advanced_settings()
+
+        self.lbl_source_status.setText("Manuel Mod: İstediğiniz paket bilgilerini aşağıdaki formdan serbestçe tanımlayabilirsiniz.")
         self.lbl_source_status.setStyleSheet("color: #38bdf8; font-size: 12px;")
         self.lbl_error.clear()
+        self.txt_name.setFocus()
 
     def _fill_form_from_scanned(self, item: StoredSoftwareInfo):
         self.lbl_error.clear()
@@ -391,20 +463,36 @@ class AddSoftwareDialog(QDialog):
         self.txt_service.setText(req.service_name or "")
         self.txt_cmd.setText(req.version_command)
 
+        # Eğer özel servis adı veya standart dışı kurulum yolu varsa gelişmiş ayarları otomatik aç
+        if req.service_name or (req.target_install_path and req.target_install_path != f"/opt/{req.name.lower()}"):
+            self._is_adv_expanded = True
+            self.adv_container.setVisible(True)
+            self.btn_toggle_adv.setText("▼ Gelişmiş Parametreleri Gizle (Kurulum Dizini, Servis, Komut)")
+
         match_idx = -1
+        matched_item = None
         for i in range(1, self.combo_scanned.count()):
             it = self.combo_scanned.itemData(i)
             if it and (it.primary_package == req.package_filename or it.app_name.lower() == req.name.lower()):
                 match_idx = i
+                matched_item = it
                 break
         if match_idx >= 0:
+            for card in getattr(self, "scanned_card_widgets", []):
+                card.set_selected(card.item == matched_item)
             self.combo_scanned.blockSignals(True)
             self.combo_scanned.setCurrentIndex(match_idx)
             self.combo_scanned.blockSignals(False)
             self.lbl_source_status.setText("✓ Hafızadaki eşleşen paket seçildi.")
             self.lbl_source_status.setStyleSheet("color: #34d399; font-size: 12px;")
         else:
-            self._set_manual_mode()
+            for card in getattr(self, "scanned_card_widgets", []):
+                card.set_selected(False)
+            self.combo_scanned.blockSignals(True)
+            self.combo_scanned.setCurrentIndex(0)
+            self.combo_scanned.blockSignals(False)
+            self.lbl_source_status.setText("Manuel Mod: Özel paket yapılandırması.")
+            self.lbl_source_status.setStyleSheet("color: #38bdf8; font-size: 12px;")
 
     def _browse_external_file(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -662,21 +750,21 @@ class ProfileEditorDialog(QDialog):
             f"Lokasyon Profilini Düzenle: {profile_to_edit.name}" if self.is_edit_mode
             else "Yeni Hedef Lokasyon Profili Oluştur"
         )
-        self.resize(960, 720)
-        self.setMinimumSize(850, 620)
+        self.resize(900, 620)
+        self.setMinimumSize(760, 480)
         self._setup_ui()
         self._populate_fields()
 
     def _setup_ui(self):
         root_layout = QVBoxLayout(self)
-        root_layout.setContentsMargins(20, 18, 20, 18)
-        root_layout.setSpacing(14)
+        root_layout.setContentsMargins(18, 14, 18, 14)
+        root_layout.setSpacing(10)
 
         # 1. Başlık Banner'ı
         header_frame = QFrame()
         header_frame.setProperty("class", "ModernCard")
         h_layout = QHBoxLayout(header_frame)
-        h_layout.setContentsMargins(18, 12, 18, 12)
+        h_layout.setContentsMargins(16, 10, 16, 10)
 
         icon_lbl = QLabel("")
         icon_lbl.setStyleSheet("font-size: 24px;")
@@ -688,11 +776,12 @@ class ProfileEditorDialog(QDialog):
             f"Lokasyon Profilini Düzenle ({self.profile_to_edit.id})" if self.is_edit_mode
             else "Yeni Hedef Lokasyon Profili Tanımla"
         )
-        title_lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #f8fafc;")
+        title_lbl.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
         title_col.addWidget(title_lbl)
 
         sub_lbl = QLabel("Bağlantı ayarlarını, yazılım paketlerini, malzeme listesini ve konfigürasyon şablonunu yapılandırın.")
-        sub_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        sub_lbl.setStyleSheet("color: #94a3b8; font-size: 11.5px;")
+        sub_lbl.setWordWrap(True)
         title_col.addWidget(sub_lbl)
         h_layout.addLayout(title_col)
         h_layout.addStretch()
@@ -735,8 +824,12 @@ class ProfileEditorDialog(QDialog):
 
     def _setup_tab_general(self):
         """Sekme 1: Genel Bilgiler ve Cihaz Ağ/SSH Ayarları."""
-        tab = QWidget()
-        tab_layout = QHBoxLayout(tab)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+
+        container = QWidget()
+        tab_layout = QHBoxLayout(container)
         tab_layout.setContentsMargins(10, 10, 10, 10)
         tab_layout.setSpacing(16)
 
@@ -750,6 +843,50 @@ class ProfileEditorDialog(QDialog):
         lbl_s1 = QLabel("Genel İstasyon Bilgileri")
         lbl_s1.setStyleSheet("font-size: 14px; font-weight: 700; color: #60a5fa;")
         left_layout.addWidget(lbl_s1)
+
+        # Yeni profil oluşturuluyorsa: Var olan lokasyondan kopyalama seçeneği
+        if not self.is_edit_mode:
+            clone_box = QFrame()
+            clone_box.setStyleSheet("""
+                QFrame {
+                    background-color: #0b1120;
+                    border: 1px dashed rgba(56, 189, 248, 0.4);
+                    border-radius: 8px;
+                    padding: 4px 6px;
+                }
+            """)
+            c_vbox = QVBoxLayout(clone_box)
+            c_vbox.setContentsMargins(6, 6, 6, 6)
+            c_vbox.setSpacing(5)
+
+            lbl_c_title = QLabel("Şablondan Doldur (İsteğe Bağlı):")
+            lbl_c_title.setStyleSheet("font-size: 11.5px; font-weight: 600; color: #38bdf8;")
+            c_vbox.addWidget(lbl_c_title)
+
+            c_row = QHBoxLayout()
+            c_row.setSpacing(6)
+
+            self.combo_clone = QComboBox()
+            self.combo_clone.setFixedHeight(30)
+            self.combo_clone.setStyleSheet("font-size: 12px; min-height: 28px;")
+            self.combo_clone.addItem("-- Var Olan Lokasyondan Seç --", None)
+
+            existing_profiles = self.profile_manager.list_profiles()
+            for p in existing_profiles:
+                self.combo_clone.addItem(f"{p.name}", p.id)
+
+            self.combo_clone.currentIndexChanged.connect(self._on_clone_combo_changed)
+            c_row.addWidget(self.combo_clone, 1)
+
+            btn_clone = TouchButton("Doldur", variant="ghost")
+            btn_clone.setFixedHeight(30)
+            btn_clone.setStyleSheet("min-height: 28px; font-size: 11.5px; font-weight: 600; padding: 2px 10px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);")
+            btn_clone.setToolTip("Seçili lokasyonun ayarlarını (isim hariç) bu forma aktarır")
+            btn_clone.clicked.connect(self._apply_clone_from_selected)
+            c_row.addWidget(btn_clone)
+
+            c_vbox.addLayout(c_row)
+            left_layout.addWidget(clone_box)
 
         left_layout.addWidget(self._make_field_label("Profil Kimliği (ID - Benzersiz):"))
         self.txt_id = QLineEdit()
@@ -842,7 +979,8 @@ class ProfileEditorDialog(QDialog):
         key_col.addLayout(key_row)
         right_layout.addLayout(key_col)
 
-        self.chk_local_mode = QCheckBox("Yerel Linux Modu (Uygulama doğrudan hedef Linux'ta çalışır, SSH atlanır)")
+        self.chk_local_mode = QCheckBox("Yerel Linux Modu (SSH atlanır)")
+        self.chk_local_mode.setToolTip("Uygulama doğrudan hedef Linux cihazında çalışıyorsa işaretleyin, SSH bağlantısı atlanır.")
         right_layout.addWidget(self.chk_local_mode)
 
         paths_row = QHBoxLayout()
@@ -864,7 +1002,9 @@ class ProfileEditorDialog(QDialog):
         right_layout.addStretch()
 
         tab_layout.addWidget(right_box, 1)
-        self.tabs.addTab(tab, " Genel & Cihaz Bağlantısı")
+
+        scroll.setWidget(container)
+        self.tabs.addTab(scroll, " Genel & Cihaz Bağlantısı")
 
     def _setup_tab_software(self):
         """Sekme 2: Yazılım Paketleri Gereksinimleri."""
@@ -876,6 +1016,7 @@ class ProfileEditorDialog(QDialog):
         header_row = QHBoxLayout()
         desc = QLabel("Hedef sistemde kontrol edilecek veya yüklenecek yazılım paketleri:")
         desc.setStyleSheet("color: #94a3b8; font-size: 13px;")
+        desc.setWordWrap(True)
         header_row.addWidget(desc)
         header_row.addStretch()
 
@@ -902,6 +1043,16 @@ class ProfileEditorDialog(QDialog):
         self.sw_list_layout = QVBoxLayout(container)
         self.sw_list_layout.setContentsMargins(0, 0, 4, 0)
         self.sw_list_layout.setSpacing(10)
+
+        self.sw_empty_lbl = QLabel(
+            "📦 Henüz bu profile yazılım paketi eklenmedi.<br>"
+            "<span style='color: #64748b;'>Yukarıdaki <b>'+ Yeni Paket Ekle...'</b> veya <b>'Hızlı Boş Kart'</b> butonu ile paketinizi dahil edebilirsiniz.</span>"
+        )
+        self.sw_empty_lbl.setAlignment(Qt.AlignCenter)
+        self.sw_empty_lbl.setStyleSheet("color: #94a3b8; font-size: 12.5px; line-height: 1.6; padding: 40px;")
+        self.sw_empty_lbl.setWordWrap(True)
+        self.sw_list_layout.addWidget(self.sw_empty_lbl)
+
         scroll.setWidget(container)
         layout.addWidget(scroll, 1)
 
@@ -917,6 +1068,7 @@ class ProfileEditorDialog(QDialog):
         header_row = QHBoxLayout()
         desc = QLabel("Saha operasyonuna çıkarken operatörün yanında götürmesi gereken malzemeler:")
         desc.setStyleSheet("color: #94a3b8; font-size: 13px;")
+        desc.setWordWrap(True)
         header_row.addWidget(desc)
         header_row.addStretch()
 
@@ -943,6 +1095,16 @@ class ProfileEditorDialog(QDialog):
         self.equip_list_layout = QVBoxLayout(container)
         self.equip_list_layout.setContentsMargins(0, 0, 4, 0)
         self.equip_list_layout.setSpacing(10)
+
+        self.equip_empty_lbl = QLabel(
+            "🎒 Henüz bu profile malzeme listesi eklenmedi.<br>"
+            "<span style='color: #64748b;'>Yukarıdaki <b>'Hafızadan Malzeme Ekle...'</b> veya <b>'Boş Satır Ekle'</b> butonları ile malzeme dahil edebilirsiniz.</span>"
+        )
+        self.equip_empty_lbl.setAlignment(Qt.AlignCenter)
+        self.equip_empty_lbl.setStyleSheet("color: #94a3b8; font-size: 12.5px; line-height: 1.6; padding: 40px;")
+        self.equip_empty_lbl.setWordWrap(True)
+        self.equip_list_layout.addWidget(self.equip_empty_lbl)
+
         scroll.setWidget(container)
         layout.addWidget(scroll, 1)
 
@@ -958,6 +1120,7 @@ class ProfileEditorDialog(QDialog):
         header_row = QHBoxLayout()
         desc = QLabel("Bu istasyona ait referans konfigürasyon metni (JSON veya metin):")
         desc.setStyleSheet("color: #94a3b8; font-size: 13px;")
+        desc.setWordWrap(True)
         header_row.addWidget(desc)
         header_row.addStretch()
 
@@ -1009,12 +1172,16 @@ class ProfileEditorDialog(QDialog):
         card = SoftwareReqItemCard(req, on_delete=self._remove_software_card, asset_manager=self.asset_manager)
         self.sw_cards.append(card)
         self.sw_list_layout.addWidget(card)
+        if hasattr(self, "sw_empty_lbl"):
+            self.sw_empty_lbl.setVisible(False)
 
     def _remove_software_card(self, card: SoftwareReqItemCard):
         if card in self.sw_cards:
             self.sw_cards.remove(card)
             self.sw_list_layout.removeWidget(card)
             card.deleteLater()
+            if hasattr(self, "sw_empty_lbl"):
+                self.sw_empty_lbl.setVisible(len(self.sw_cards) == 0)
 
     def _open_equipment_catalog_dialog(self):
         existing_names = [
@@ -1036,12 +1203,16 @@ class ProfileEditorDialog(QDialog):
         card = EquipmentItemCard(item, on_delete=self._remove_equipment_card)
         self.equip_cards.append(card)
         self.equip_list_layout.addWidget(card)
+        if hasattr(self, "equip_empty_lbl"):
+            self.equip_empty_lbl.setVisible(False)
 
     def _remove_equipment_card(self, card: EquipmentItemCard):
         if card in self.equip_cards:
             self.equip_cards.remove(card)
             self.equip_list_layout.removeWidget(card)
             card.deleteLater()
+            if hasattr(self, "equip_empty_lbl"):
+                self.equip_empty_lbl.setVisible(len(self.equip_cards) == 0)
 
     def _browse_key_file(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -1088,12 +1259,93 @@ class ProfileEditorDialog(QDialog):
             self.cfg_status_lbl.setText(f"✕ Geçersiz JSON sözdizimi: {e}")
             self.cfg_status_lbl.setStyleSheet("color: #f87171; font-size: 12px;")
 
+    def _on_clone_combo_changed(self, index: int):
+        """Klonlama açılır kutusundan bir lokasyon seçildiğinde tetiklenir."""
+        if index > 0:
+            self._apply_clone_from_selected()
+
+    def _apply_clone_from_selected(self):
+        """Seçilen mevcut lokasyon profilinin tüm ayarlarını isim ve ID hariç bu forma aktarır."""
+        if not hasattr(self, "combo_clone"):
+            return
+        source_id = self.combo_clone.currentData()
+        if not source_id:
+            return
+
+        source = self.profile_manager.load_profile(source_id)
+        if not source:
+            self.status_lbl.setText(f"✕ '{source_id}' lokasyon profili yüklenemedi!")
+            self.status_lbl.setStyleSheet("color: #f87171; font-size: 12px; font-weight: 600;")
+            return
+
+        # 1. Genel Bilgiler (İsim hariç: kullanıcının girdiği isim korunur)
+        self.txt_desc.setText(source.description)
+        self.txt_notes.setPlainText(source.custom_notes)
+
+        # 2. Hedef Cihaz & Bağlantı Ayarları
+        td = source.target_device
+        self.txt_host.setText(td.host)
+        self.spin_port.setValue(td.port)
+        self.txt_user.setText(td.username)
+        if td.password:
+            self.txt_pass.setText(td.password)
+        else:
+            self.txt_pass.clear()
+        if td.key_path:
+            self.txt_key.setText(td.key_path)
+        else:
+            self.txt_key.clear()
+        self.chk_local_mode.setChecked(td.use_local_mode)
+        self.txt_log_dir.setText(td.remote_log_dir)
+        self.txt_cfg_path.setText(td.remote_config_path)
+
+        # 3. Yazılım Paketleri (Mevcut kartları temizle ve kopyala)
+        while self.sw_cards:
+            self._remove_software_card(self.sw_cards[0])
+        for sw in source.software_requirements:
+            sw_copy = SoftwareRequirement(
+                name=sw.name,
+                expected_version=sw.expected_version,
+                package_filename=sw.package_filename,
+                target_install_path=sw.target_install_path,
+                service_name=sw.service_name,
+                version_command=sw.version_command,
+                status="pending"
+            )
+            self._add_software_card(sw_copy)
+
+        # 4. Saha Ekipmanları (Mevcut kartları temizle ve kopyala)
+        while self.equip_cards:
+            self._remove_equipment_card(self.equip_cards[0])
+        for idx, eq in enumerate(source.equipment_checklist):
+            eq_copy = EquipmentItem(
+                id=f"eq_clone_{idx}_{int(id(eq)) % 1000}",
+                name=eq.name,
+                description=eq.description,
+                is_mandatory=eq.is_mandatory,
+                is_checked=False
+            )
+            self._add_equipment_card(eq_copy)
+
+        # 5. Referans Konfigürasyon
+        self.txt_baseline_config.setPlainText(source.baseline_config_content)
+        self.cfg_status_lbl.setText(f"✓ '{source.name}' referans konfigürasyonu kopyalandı.")
+        self.cfg_status_lbl.setStyleSheet("color: #34d399; font-size: 12px;")
+
+        # Durum bildirimi
+        self.status_lbl.setText(f"✓ '{source.name}' lokasyonunun tüm bilgileri kopyalandı (İsim hariç).")
+        self.status_lbl.setStyleSheet("color: #34d399; font-size: 12px; font-weight: 600;")
+
+        # Yeni isim verilmesi için imleci odakla
+        if not self.txt_name.text().strip():
+            self.txt_name.setFocus()
+        elif not self.txt_id.text().strip():
+            self.txt_id.setFocus()
+
     def _populate_fields(self):
         """Mevcut profil düzenleniyorsa alanları doldurur; yeniyse varsayılanları koyar."""
         if not self.profile_to_edit:
-            # Varsayılan 1 paket ve 2 malzeme ile başlat
-            self._add_software_card()
-            self._add_equipment_card()
+            # Yeni profil oluştururken boş kart eklenmez, liste temiz başlar
             self._load_sample_config()
             return
 
