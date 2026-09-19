@@ -73,9 +73,15 @@ FieldOps Assistant; saha görevlerinde kurum içi yazılım ve donanımların lo
 
 ---
 
-### 5. Görsel Lokasyon Profil Editörü (`ProfileEditorDialog`)
+### 5. Görsel Lokasyon Profil Editörü (`ProfileEditorDialog`) & Yazılım Ekleme Modalı (`AddSoftwareDialog`)
 - **Yeni Lokasyon Tanımlama (`+ Yeni`)**: Kullanıcı hiçbir YAML dosyasına elle dokunmadan ana ekrandaki `+ Yeni` butonuyla sıfırdan yeni bir hedef saha profili oluşturabilir.
 - **Var Olan Lokasyonu Düzenleme (`✏️ Düzenle`)**: Seçili lokasyonun tüm parametrelerini görsel modal üzerinden güncelleyebilir.
+- **Hafızadaki Yazılımları Listeleme & Otomatik Doldurma (`AddSoftwareDialog`)**:
+  - Profil düzenleme ekranının "Yazılım Paketleri" sekmesinde `+ Yeni Paket Ekle...` butonuna tıklandığında açılan pencerede Welcome Page'de (`softwares/` dizini) tespit edilen tüm uygulamalar ve versiyonlar dosya boyutu ve hazır olma durumuyla listelenir.
+  - Taranan listeden veya açılır kutudan bir yazılım seçildiğinde; Paket Adı, Sürüm, Arşiv Dosya Adı, Hedef Kurulum Yolu (`/opt/<app>`), Systemd Servis Adı ve Versiyon Komutu otomatik doldurulur.
+  - **Kesintisiz Manuel Düzenleme & Elle Giriş**: `✏️ Formu Temizle (Manuel Giriş)` butonuyla veya doğrudan formdaki alanlar üzerinden dileyen operatör tamamen elle özel bir paket yazabilir. Otomatik doldurulan her alan istendiğinde elle serbestçe değiştirilebilir.
+  - Düzenleme sekmesinde ayrıca doğrudan boş kart açmak için `✏️ Hızlı Boş Kart` ve her kart üzerinde `📦 Hafızadan Doldur...` butonu yer alır.
+  - **Ergonomik Dikey Kaydırma Düzeni (`QScrollArea`)**: Farklı ekran çözünürlüklerinde form alanlarının ve paket listesinin birbirine girmesini engellemek için tüm pencere gövdesi akıcı bir dikey kaydırma alanı (`body_scroll`) içine alınmıştır. Alt aksiyon butonları (`Vazgeç` / `✓ Paketi Ekle`) pencerenin tabanına sabitlenmiş olup her an erişilebilirdir.
 - **4 Sekmeli Zengin Arayüz**: Genel & Cihaz Ayarları, Yazılım Paketleri, Saha Ekipmanları ve Referans Konfigürasyon editörü.
 
 ---

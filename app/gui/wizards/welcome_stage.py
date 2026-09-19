@@ -719,7 +719,7 @@ class MissionSelectionWidget(QWidget):
 
     def _on_create_location_clicked(self):
         from app.gui.widgets.profile_editor_dialog import ProfileEditorDialog
-        dlg = ProfileEditorDialog(self.profile_manager, profile_to_edit=None, parent=self)
+        dlg = ProfileEditorDialog(self.profile_manager, profile_to_edit=None, asset_manager=self.asset_manager, parent=self)
         if dlg.exec() == QDialog.Accepted and dlg.saved_profile_id:
             self.refresh_data()
             idx = self.loc_combo.findData(dlg.saved_profile_id)
@@ -738,7 +738,7 @@ class MissionSelectionWidget(QWidget):
             return
 
         from app.gui.widgets.profile_editor_dialog import ProfileEditorDialog
-        dlg = ProfileEditorDialog(self.profile_manager, profile_to_edit=profile, parent=self)
+        dlg = ProfileEditorDialog(self.profile_manager, profile_to_edit=profile, asset_manager=self.asset_manager, parent=self)
         if dlg.exec() == QDialog.Accepted and dlg.saved_profile_id:
             self.refresh_data()
             idx = self.loc_combo.findData(dlg.saved_profile_id)

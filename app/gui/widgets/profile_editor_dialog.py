@@ -14,20 +14,448 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPlainTextEdit, QSpinBox, QCheckBox, QScrollArea, QFrame,
-    QFileDialog, QMessageBox, QTabWidget, QWidget, QSizePolicy
+    QFileDialog, QMessageBox, QTabWidget, QWidget, QSizePolicy,
+    QComboBox
 )
 
-from app.core.models import EquipmentItem, LocationProfile, SoftwareRequirement, TargetDeviceConfig
+from app.core.asset_manager import SoftwareAssetManager
+from app.core.models import (
+    EquipmentItem, LocationProfile, SoftwareRequirement,
+    StoredSoftwareInfo, TargetDeviceConfig
+)
 from app.core.profile_manager import ProfileManager
 from app.gui.widgets.touch_button import TouchButton
+
+
+class AddSoftwareDialog(QDialog):
+    """Yeni yazılım paketi ekleme ve yapılandırma modalı.
+    
+    Welcome page'de taranıp tespit edilen yazılımları listeler,
+    kullanıcı birini seçtiğinde alanları otomatik doldurur ve aynı zamanda
+    tüm alanların manuel olarak elle yazılmasına/düzenlenmesine izin verir.
+    """
+
+    def __init__(
+        self,
+        asset_manager: Optional[SoftwareAssetManager] = None,
+        initial_req: Optional[SoftwareRequirement] = None,
+        parent=None
+    ):
+        super().__init__(parent)
+        self.asset_manager = asset_manager or SoftwareAssetManager()
+        self.initial_req = initial_req
+        self.result_requirement: Optional[SoftwareRequirement] = None
+        self.scanned_items: List[StoredSoftwareInfo] = self.asset_manager.scan_available_softwares()
+
+        self.setWindowTitle("Yazılım Paketi Ekle & Yapılandır")
+        self.resize(760, 680)
+        self.setMinimumSize(600, 480)
+        self._setup_ui()
+
+        if initial_req:
+            self._fill_form_from_req(initial_req)
+        elif self.scanned_items:
+            first_ready = next((it for it in self.scanned_items if not it.is_empty), self.scanned_items[0])
+            self._select_scanned_item(first_ready)
+        else:
+            self._set_manual_mode()
+
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(12)
+
+        # 1. Başlık Banner
+        header = QFrame()
+        header.setProperty("class", "ModernCard")
+        h_box = QHBoxLayout(header)
+        h_box.setContentsMargins(16, 12, 16, 12)
+        h_box.setSpacing(12)
+
+        icon_lbl = QLabel("📦")
+        icon_lbl.setStyleSheet("font-size: 26px;")
+        h_box.addWidget(icon_lbl)
+
+        title_col = QVBoxLayout()
+        title_col.setSpacing(2)
+        title_lbl = QLabel("Yazılım Paketi Ekle & Yapılandır")
+        title_lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #f8fafc;")
+        title_col.addWidget(title_lbl)
+
+        sub_lbl = QLabel("Hafızadaki (softwares/) hazır paketlerden seçebilir veya tamamen elle yeni bir paket tanımlayabilirsiniz.")
+        sub_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        title_col.addWidget(sub_lbl)
+        h_box.addLayout(title_col)
+        h_box.addStretch()
+        layout.addWidget(header)
+
+        # =====================================================================
+        # KAYDIRILABİLİR İÇERİK ALANI (Form elemanlarının iç içe girmesini önler)
+        # =====================================================================
+        self.body_scroll = QScrollArea()
+        self.body_scroll.setWidgetResizable(True)
+        self.body_scroll.setFrameShape(QFrame.NoFrame)
+        self.body_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.body_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        scroll_content = QWidget()
+        scroll_content_layout = QVBoxLayout(scroll_content)
+        scroll_content_layout.setContentsMargins(0, 4, 8, 4)
+        scroll_content_layout.setSpacing(14)
+
+        # 2. ÜST BÖLÜM: Hafızadaki Tespit Edilen Yazılımlar
+        scanned_card = QFrame()
+        scanned_card.setProperty("class", "ElevatedCard")
+        scanned_layout = QVBoxLayout(scanned_card)
+        scanned_layout.setContentsMargins(16, 14, 16, 14)
+        scanned_layout.setSpacing(10)
+
+        top_row = QHBoxLayout()
+        lbl_scanned_title = QLabel("📂 Hafızada Tespit Edilen Yazılımlar (Welcome Page):")
+        lbl_scanned_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #60a5fa;")
+        top_row.addWidget(lbl_scanned_title)
+        top_row.addStretch()
+
+        btn_manual_clear = TouchButton("✏️ Formu Temizle (Manuel Giriş)", variant="ghost")
+        btn_manual_clear.setFixedHeight(30)
+        btn_manual_clear.setStyleSheet("font-size: 11.5px; padding: 2px 12px; min-height: 28px;")
+        btn_manual_clear.clicked.connect(self._set_manual_mode)
+        top_row.addWidget(btn_manual_clear)
+        scanned_layout.addLayout(top_row)
+
+        # Açılır Kutu (ComboBox)
+        self.combo_scanned = QComboBox()
+        self.combo_scanned.setFixedHeight(38)
+        self.combo_scanned.setStyleSheet("font-size: 13px; padding: 4px 12px;")
+        self.combo_scanned.addItem("✏️ [Manuel Giriş] — Özel / Farklı bir paket tanımla (Elle Yaz)", None)
+
+        for it in self.scanned_items:
+            status_str = "✓ Hazır" if not it.is_empty else "⚠️ Boş Klasör"
+            size_str = f" ({it.formatted_size})" if not it.is_empty else ""
+            file_str = f" — {it.primary_package}" if it.primary_package else ""
+            self.combo_scanned.addItem(
+                f"📦 {it.app_name} ({it.version_name}){file_str}{size_str} [{status_str}]",
+                it
+            )
+        self.combo_scanned.currentIndexChanged.connect(self._on_combo_selection_changed)
+        scanned_layout.addWidget(self.combo_scanned)
+
+        # Hızlı Seçim Listesi (Görsel ve Tıklanabilir Kartlar)
+        scanned_list_layout = QVBoxLayout()
+        scanned_list_layout.setContentsMargins(0, 2, 0, 2)
+        scanned_list_layout.setSpacing(6)
+
+        if self.scanned_items:
+            for it in self.scanned_items:
+                item_frame = QFrame()
+                item_frame.setStyleSheet("""
+                    QFrame {
+                        background-color: #0b1120;
+                        border: 1px solid #1e293b;
+                        border-radius: 8px;
+                        padding: 2px 4px;
+                    }
+                    QFrame:hover {
+                        border-color: #3b82f6;
+                        background-color: #0d1527;
+                    }
+                """)
+                row = QHBoxLayout(item_frame)
+                row.setContentsMargins(10, 8, 10, 8)
+                row.setSpacing(10)
+
+                icon = QLabel("📦")
+                icon.setStyleSheet("font-size: 14px;")
+                row.addWidget(icon)
+
+                name_lbl = QLabel(f"<b>{it.app_name}</b> <span style='color: #38bdf8;'>({it.version_name})</span>")
+                name_lbl.setStyleSheet("font-size: 13px; color: #f8fafc;")
+                row.addWidget(name_lbl)
+
+                file_lbl = QLabel(f"<code>{it.primary_package or 'Paket Dosyası Yok'}</code>")
+                file_lbl.setStyleSheet("color: #94a3b8; font-size: 11.5px;")
+                row.addWidget(file_lbl)
+
+                row.addStretch()
+
+                if not it.is_empty:
+                    badge = QLabel(f"✓ {it.formatted_size}")
+                    badge.setProperty("class", "PillBadge PillSuccess")
+                else:
+                    badge = QLabel("⚠️ Boş")
+                    badge.setProperty("class", "PillBadge PillWarning")
+                row.addWidget(badge)
+
+                btn_select = TouchButton("Seç ➔", variant="ghost")
+                btn_select.setFixedHeight(28)
+                btn_select.setStyleSheet("min-height: 26px; padding: 2px 10px; font-size: 11.5px;")
+                btn_select.clicked.connect(lambda _, item=it: self._select_scanned_item(item))
+                row.addWidget(btn_select)
+
+                scanned_list_layout.addWidget(item_frame)
+        else:
+            no_item_lbl = QLabel("ℹ️ <b>softwares/</b> dizininde henüz kayıtlı paket tespit edilemedi.<br>Aşağıdaki formdan manuel olarak paket tanımlayabilirsiniz.")
+            no_item_lbl.setStyleSheet("color: #94a3b8; font-size: 12px; padding: 12px;")
+            no_item_lbl.setAlignment(Qt.AlignCenter)
+            scanned_list_layout.addWidget(no_item_lbl)
+
+        scanned_layout.addLayout(scanned_list_layout)
+
+        # Durum Bilgi Satırı
+        self.lbl_source_status = QLabel()
+        self.lbl_source_status.setStyleSheet("font-size: 12px; color: #94a3b8;")
+        scanned_layout.addWidget(self.lbl_source_status)
+
+        scroll_content_layout.addWidget(scanned_card)
+
+        # 3. ORTA BÖLÜM: Form Alanları (Manuel Düzenlenebilir)
+        form_card = QFrame()
+        form_card.setProperty("class", "ElevatedCard")
+        form_layout = QVBoxLayout(form_card)
+        form_layout.setContentsMargins(16, 14, 16, 14)
+        form_layout.setSpacing(10)
+
+        lbl_form_title = QLabel("📝 Paket Parametreleri (Serbestçe Düzenlenebilir):")
+        lbl_form_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #34d399;")
+        form_layout.addWidget(lbl_form_title)
+
+        # Satır 1: Paket Adı & Sürüm
+        row1 = QHBoxLayout()
+        row1.setSpacing(12)
+
+        col_name = QVBoxLayout()
+        col_name.setSpacing(4)
+        lbl_name = QLabel("Paket / Servis Adı:")
+        lbl_name.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
+        self.txt_name = QLineEdit()
+        self.txt_name.setPlaceholderText("Örn: radar_control veya RadarControlService")
+        self.txt_name.setStyleSheet("min-height: 36px;")
+        col_name.addWidget(lbl_name)
+        col_name.addWidget(self.txt_name)
+        row1.addLayout(col_name, 2)
+
+        col_ver = QVBoxLayout()
+        col_ver.setSpacing(4)
+        lbl_ver = QLabel("Beklenen Sürüm:")
+        lbl_ver.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
+        self.txt_version = QLineEdit("1.0.0")
+        self.txt_version.setPlaceholderText("Örn: 2.4.0")
+        self.txt_version.setStyleSheet("min-height: 36px;")
+        col_ver.addWidget(lbl_ver)
+        col_ver.addWidget(self.txt_version)
+        row1.addLayout(col_ver, 1)
+
+        form_layout.addLayout(row1)
+
+        # Satır 2: Paket Dosya Adı (Arşiv) & Gözat
+        lbl_file = QLabel("Paket Dosya Adı (Arşiv .tar.gz / .zip / .bin):")
+        lbl_file.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
+        form_layout.addWidget(lbl_file)
+
+        row_file = QHBoxLayout()
+        row_file.setSpacing(8)
+        self.txt_file = QLineEdit()
+        self.txt_file.setPlaceholderText("Örn: radar_control_v2.4.0_x86_64.tar.gz")
+        self.txt_file.setStyleSheet("min-height: 36px;")
+        btn_browse_file = TouchButton("Dosya Seç...", variant="ghost")
+        btn_browse_file.setFixedHeight(36)
+        btn_browse_file.setStyleSheet("min-height: 34px; padding: 2px 14px; font-size: 12px;")
+        btn_browse_file.clicked.connect(self._browse_external_file)
+        row_file.addWidget(self.txt_file, 1)
+        row_file.addWidget(btn_browse_file)
+        form_layout.addLayout(row_file)
+
+        # Satır 3: Hedef Kurulum Yolu & Systemd Servisi
+        row3 = QHBoxLayout()
+        row3.setSpacing(12)
+
+        col_path = QVBoxLayout()
+        col_path.setSpacing(4)
+        lbl_path = QLabel("Hedef Kurulum Dizini (Linux):")
+        lbl_path.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
+        self.txt_path = QLineEdit("/opt/app")
+        self.txt_path.setStyleSheet("min-height: 36px;")
+        col_path.addWidget(lbl_path)
+        col_path.addWidget(self.txt_path)
+        row3.addLayout(col_path, 1)
+
+        col_srv = QVBoxLayout()
+        col_srv.setSpacing(4)
+        lbl_srv = QLabel("Systemd Servis Adı (Opsiyonel):")
+        lbl_srv.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
+        self.txt_service = QLineEdit()
+        self.txt_service.setPlaceholderText("Örn: radar_control")
+        self.txt_service.setStyleSheet("min-height: 36px;")
+        col_srv.addWidget(lbl_srv)
+        col_srv.addWidget(self.txt_service)
+        row3.addLayout(col_srv, 1)
+
+        form_layout.addLayout(row3)
+
+        # Satır 4: Sürüm Kontrol Komutu
+        lbl_cmd = QLabel("Cihazda Sürüm Kontrol Komutu:")
+        lbl_cmd.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
+        self.txt_cmd = QLineEdit("/opt/app/bin/app --version")
+        self.txt_cmd.setStyleSheet("min-height: 36px;")
+        form_layout.addWidget(lbl_cmd)
+        form_layout.addWidget(self.txt_cmd)
+
+        scroll_content_layout.addWidget(form_card)
+        scroll_content_layout.addStretch(1)
+
+        self.body_scroll.setWidget(scroll_content)
+        layout.addWidget(self.body_scroll, 1)
+
+        # 4. Alt Aksiyon Barı (Sabit ve daima görünür)
+        bottom_bar = QHBoxLayout()
+        bottom_bar.setSpacing(12)
+
+        self.lbl_error = QLabel()
+        self.lbl_error.setStyleSheet("color: #f87171; font-size: 12px; font-weight: 600;")
+        bottom_bar.addWidget(self.lbl_error)
+        bottom_bar.addStretch()
+
+        btn_cancel = TouchButton("Vazgeç", variant="ghost")
+        btn_cancel.setFixedHeight(38)
+        btn_cancel.setStyleSheet("min-height: 36px; padding: 2px 18px; font-size: 13px;")
+        btn_cancel.clicked.connect(self.reject)
+        bottom_bar.addWidget(btn_cancel)
+
+        btn_add = TouchButton("✓ Paketi Ekle", variant="primary")
+        btn_add.setFixedHeight(38)
+        btn_add.setStyleSheet("min-height: 36px; padding: 2px 22px; font-size: 13px; font-weight: 700;")
+        btn_add.clicked.connect(self._on_add_clicked)
+        bottom_bar.addWidget(btn_add)
+
+        layout.addLayout(bottom_bar)
+
+    def _select_scanned_item(self, item: StoredSoftwareInfo):
+        for i in range(1, self.combo_scanned.count()):
+            if self.combo_scanned.itemData(i) == item:
+                self.combo_scanned.blockSignals(True)
+                self.combo_scanned.setCurrentIndex(i)
+                self.combo_scanned.blockSignals(False)
+                break
+        self._fill_form_from_scanned(item)
+
+    def _on_combo_selection_changed(self, index: int):
+        data = self.combo_scanned.currentData()
+        if data is None:
+            self._set_manual_mode()
+        else:
+            self._fill_form_from_scanned(data)
+
+    def _set_manual_mode(self):
+        self.combo_scanned.blockSignals(True)
+        self.combo_scanned.setCurrentIndex(0)
+        self.combo_scanned.blockSignals(False)
+        self.lbl_source_status.setText("✏️ Manuel Mod: İstediğiniz paket bilgilerini aşağıdaki formdan serbestçe tanımlayabilirsiniz.")
+        self.lbl_source_status.setStyleSheet("color: #38bdf8; font-size: 12px;")
+        self.lbl_error.clear()
+
+    def _fill_form_from_scanned(self, item: StoredSoftwareInfo):
+        self.lbl_error.clear()
+        clean_version = item.version_name.lstrip("v") if item.version_name.startswith("v") else item.version_name
+        self.txt_name.setText(item.app_name)
+        self.txt_version.setText(clean_version or "1.0.0")
+
+        if item.primary_package:
+            self.txt_file.setText(item.primary_package)
+        else:
+            self.txt_file.setText(f"{item.app_name}_{item.version_name}.tar.gz")
+
+        install_path = f"/opt/{item.app_name}"
+        self.txt_path.setText(install_path)
+        self.txt_service.setText(item.app_name)
+        self.txt_cmd.setText(f"{install_path}/bin/{item.app_name} --version")
+
+        if item.is_empty:
+            self.lbl_source_status.setText(
+                f"⚠️ Dikkat: Bu versiyon klasörü (softwares/{item.relative_path}) henüz boş. "
+                f"Paket dosyasını daha sonra klasöre ekleyebilirsiniz."
+            )
+            self.lbl_source_status.setStyleSheet("color: #fbbf24; font-size: 12px;")
+        else:
+            self.lbl_source_status.setText(
+                f"✓ Hafızada Hazır: softwares/{item.relative_path}/{item.primary_package} ({item.formatted_size})"
+            )
+            self.lbl_source_status.setStyleSheet("color: #34d399; font-size: 12px;")
+
+    def _fill_form_from_req(self, req: SoftwareRequirement):
+        self.txt_name.setText(req.name)
+        self.txt_version.setText(req.expected_version)
+        self.txt_file.setText(req.package_filename)
+        self.txt_path.setText(req.target_install_path)
+        self.txt_service.setText(req.service_name or "")
+        self.txt_cmd.setText(req.version_command)
+
+        match_idx = -1
+        for i in range(1, self.combo_scanned.count()):
+            it = self.combo_scanned.itemData(i)
+            if it and (it.primary_package == req.package_filename or it.app_name.lower() == req.name.lower()):
+                match_idx = i
+                break
+        if match_idx >= 0:
+            self.combo_scanned.blockSignals(True)
+            self.combo_scanned.setCurrentIndex(match_idx)
+            self.combo_scanned.blockSignals(False)
+            self.lbl_source_status.setText("✓ Hafızadaki eşleşen paket seçildi.")
+            self.lbl_source_status.setStyleSheet("color: #34d399; font-size: 12px;")
+        else:
+            self._set_manual_mode()
+
+    def _browse_external_file(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Paket Arşiv Dosyası Seç",
+            str(self.asset_manager.packages_dir),
+            "Paket Arşivleri (*.tar.gz *.tgz *.zip *.bin *.exe);;Tüm Dosyalar (*.*)"
+        )
+        if path:
+            p = Path(path)
+            self.txt_file.setText(p.name)
+
+    def _on_add_clicked(self):
+        name = self.txt_name.text().strip()
+        version = self.txt_version.text().strip()
+        file_name = self.txt_file.text().strip()
+
+        if not name:
+            self.lbl_error.setText("✕ Lütfen paket adını girin.")
+            self.txt_name.setFocus()
+            return
+        if not file_name:
+            self.lbl_error.setText("✕ Lütfen paket dosya adını girin.")
+            self.txt_file.setFocus()
+            return
+
+        self.result_requirement = SoftwareRequirement(
+            name=name,
+            expected_version=version or "1.0.0",
+            package_filename=file_name,
+            target_install_path=self.txt_path.text().strip() or f"/opt/{name.lower()}",
+            service_name=self.txt_service.text().strip() or None,
+            version_command=self.txt_cmd.text().strip() or f"/opt/{name.lower()}/bin/{name.lower()} --version"
+        )
+        self.accept()
+
+    def get_software_requirement(self) -> Optional[SoftwareRequirement]:
+        return self.result_requirement
 
 
 class SoftwareReqItemCard(QFrame):
     """Yazılım gereksinimi düzenleme satırı."""
 
-    def __init__(self, req: Optional[SoftwareRequirement] = None, on_delete=None, parent=None):
+    def __init__(
+        self,
+        req: Optional[SoftwareRequirement] = None,
+        on_delete=None,
+        asset_manager: Optional[SoftwareAssetManager] = None,
+        parent=None
+    ):
         super().__init__(parent)
         self.on_delete = on_delete
+        self.asset_manager = asset_manager
         self.setProperty("class", "ElevatedCard")
         self._setup_ui(req)
 
@@ -53,6 +481,12 @@ class SoftwareReqItemCard(QFrame):
         self.txt_version.setFixedWidth(100)
         self.txt_version.setStyleSheet("min-height: 34px;")
 
+        btn_fill = TouchButton("📦 Hafızadan Doldur...", variant="ghost")
+        btn_fill.setFixedHeight(32)
+        btn_fill.setStyleSheet("min-height: 30px; padding: 2px 10px; font-size: 11.5px;")
+        btn_fill.setToolTip("Hafızadaki (softwares/) paketlerden seçerek bu kartın alanlarını otomatik doldurur")
+        btn_fill.clicked.connect(self._open_fill_dialog)
+
         btn_del = TouchButton("🗑", variant="delete")
         btn_del.setFixedSize(32, 32)
         btn_del.setToolTip("Bu Paketi Kaldır")
@@ -63,6 +497,7 @@ class SoftwareReqItemCard(QFrame):
         row1.addWidget(self.txt_name, 2)
         row1.addWidget(lbl_ver)
         row1.addWidget(self.txt_version)
+        row1.addWidget(btn_fill)
         row1.addWidget(btn_del)
         layout.addLayout(row1)
 
@@ -108,6 +543,21 @@ class SoftwareReqItemCard(QFrame):
         row3.addWidget(lbl_cmd)
         row3.addWidget(self.txt_cmd, 2)
         layout.addLayout(row3)
+
+    def _open_fill_dialog(self):
+        dlg = AddSoftwareDialog(self.asset_manager, initial_req=self.to_model(), parent=self)
+        if dlg.exec():
+            selected = dlg.get_software_requirement()
+            if selected:
+                self.fill_from_model(selected)
+
+    def fill_from_model(self, req: SoftwareRequirement):
+        self.txt_name.setText(req.name)
+        self.txt_version.setText(req.expected_version)
+        self.txt_file.setText(req.package_filename)
+        self.txt_path.setText(req.target_install_path)
+        self.txt_service.setText(req.service_name or "")
+        self.txt_cmd.setText(req.version_command)
 
     def to_model(self) -> Optional[SoftwareRequirement]:
         name = self.txt_name.text().strip()
@@ -186,11 +636,13 @@ class ProfileEditorDialog(QDialog):
         self,
         profile_manager: ProfileManager,
         profile_to_edit: Optional[LocationProfile] = None,
+        asset_manager: Optional[SoftwareAssetManager] = None,
         parent=None
     ):
         super().__init__(parent)
         self.profile_manager = profile_manager
         self.profile_to_edit = profile_to_edit
+        self.asset_manager = asset_manager or SoftwareAssetManager()
         self.is_edit_mode = profile_to_edit is not None
         self.saved_profile_id: Optional[str] = None
 
@@ -418,11 +870,19 @@ class ProfileEditorDialog(QDialog):
         header_row.addWidget(desc)
         header_row.addStretch()
 
-        btn_add = TouchButton("+ Yeni Paket Ekle", variant="primary")
+        btn_add = TouchButton("+ Yeni Paket Ekle...", variant="primary")
         btn_add.setFixedHeight(34)
-        btn_add.setStyleSheet("min-height: 32px; padding: 2px 14px; font-size: 12px; font-weight: 700;")
-        btn_add.clicked.connect(lambda: self._add_software_card())
+        btn_add.setStyleSheet("min-height: 32px; padding: 2px 14px; font-size: 12.5px; font-weight: 700;")
+        btn_add.setToolTip("Hafızadaki (softwares/) hazır paketleri listeleyip seçin veya manuel paket ekleyin")
+        btn_add.clicked.connect(self._open_add_software_dialog)
         header_row.addWidget(btn_add)
+
+        btn_manual = TouchButton("✏️ Hızlı Boş Kart", variant="ghost")
+        btn_manual.setFixedHeight(34)
+        btn_manual.setStyleSheet("min-height: 32px; padding: 2px 12px; font-size: 12px;")
+        btn_manual.setToolTip("Doğrudan elle yazabileceğiniz boş bir düzenleme kartı ekler")
+        btn_manual.clicked.connect(lambda: self._add_software_card())
+        header_row.addWidget(btn_manual)
         layout.addLayout(header_row)
 
         scroll = QScrollArea()
@@ -521,8 +981,15 @@ class ProfileEditorDialog(QDialog):
         lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #cbd5e1;")
         return lbl
 
+    def _open_add_software_dialog(self):
+        dlg = AddSoftwareDialog(self.asset_manager, parent=self)
+        if dlg.exec():
+            req = dlg.get_software_requirement()
+            if req:
+                self._add_software_card(req)
+
     def _add_software_card(self, req: Optional[SoftwareRequirement] = None):
-        card = SoftwareReqItemCard(req, on_delete=self._remove_software_card)
+        card = SoftwareReqItemCard(req, on_delete=self._remove_software_card, asset_manager=self.asset_manager)
         self.sw_cards.append(card)
         self.sw_list_layout.addWidget(card)
 
