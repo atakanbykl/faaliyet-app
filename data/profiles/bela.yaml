@@ -1,0 +1,43 @@
+id: bela
+name: bela
+description: ''
+target_device:
+  host: 192.168.1.100
+  port: 22
+  username: root
+  password: null
+  key_path: null
+  use_local_mode: false
+  remote_log_dir: /opt/fieldapp/logs
+  remote_config_path: /opt/fieldapp/config/config.json
+equipment_checklist:
+- id: eq_01da2e
+  name: Saha Multimetresi ve Probları
+  description: True-RMS dijital multimetre ve yüksek gerilim probları
+  is_mandatory: false
+- id: eq_6f776a
+  name: Termal Macun & İletken Temizleme Kiti
+  description: İşlemci ve soğutucu blok bakım kiti
+  is_mandatory: false
+- id: eq_e8bb02
+  name: 12V Araç Çakmaklık Güç Kablosu
+  description: 3 metre sigortalı araç içi güç besleme ara kablosu
+  is_mandatory: false
+software_requirements:
+- name: radar_control
+  expected_version: 2.4.0
+  package_filename: radar_control_v2.4.0_x86_64.tar.gz
+  target_install_path: /opt/radar_control
+  service_name: radar_control
+  version_command: /opt/radar_control/bin/radar_control --version
+- name: yardimci_araclar
+  expected_version: 1.0.0
+  package_filename: saha_diagnostik_v1.0.0.tar.gz
+  target_install_path: /opt/yardimci_araclar
+  service_name: yardimci_araclar
+  version_command: /opt/yardimci_araclar/bin/yardimci_araclar --version
+baseline_config_content: "{\n  \"station_id\": \"STATION-01\",\n  \"log_level\": \"\
+  INFO\",\n  \"telemetry_interval_sec\": 5,\n  \"network\": {\n    \"ip\": \"192.168.1.100\"\
+  ,\n    \"port\": 8080\n  },\n  \"features\": {\n    \"auto_backup\": true,\n   \
+  \ \"encryption_enabled\": true\n  }\n}"
+custom_notes: ''

@@ -74,7 +74,7 @@ class AddSoftwareDialog(QDialog):
         h_box.setContentsMargins(16, 12, 16, 12)
         h_box.setSpacing(12)
 
-        icon_lbl = QLabel("📦")
+        icon_lbl = QLabel("")
         icon_lbl.setStyleSheet("font-size: 26px;")
         h_box.addWidget(icon_lbl)
 
@@ -113,14 +113,14 @@ class AddSoftwareDialog(QDialog):
         scanned_layout.setSpacing(10)
 
         top_row = QHBoxLayout()
-        lbl_scanned_title = QLabel("📂 Hafızada Tespit Edilen Yazılımlar (Welcome Page):")
+        lbl_scanned_title = QLabel("Hafızada Tespit Edilen Yazılımlar (Welcome Page):")
         lbl_scanned_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #60a5fa;")
         top_row.addWidget(lbl_scanned_title)
         top_row.addStretch()
 
-        btn_manual_clear = TouchButton("✏️ Formu Temizle (Manuel Giriş)", variant="ghost")
+        btn_manual_clear = TouchButton("Formu Temizle (Manuel Giriş)", variant="ghost")
         btn_manual_clear.setFixedHeight(30)
-        btn_manual_clear.setStyleSheet("font-size: 11.5px; padding: 2px 12px; min-height: 28px;")
+        btn_manual_clear.setStyleSheet("font-size: 12px; padding: 2px 12px; min-height: 28px;")
         btn_manual_clear.clicked.connect(self._set_manual_mode)
         top_row.addWidget(btn_manual_clear)
         scanned_layout.addLayout(top_row)
@@ -129,14 +129,14 @@ class AddSoftwareDialog(QDialog):
         self.combo_scanned = QComboBox()
         self.combo_scanned.setFixedHeight(38)
         self.combo_scanned.setStyleSheet("font-size: 13px; padding: 4px 12px;")
-        self.combo_scanned.addItem("✏️ [Manuel Giriş] — Özel / Farklı bir paket tanımla (Elle Yaz)", None)
+        self.combo_scanned.addItem("[Manuel Giriş] — Özel / Farklı bir paket tanımla (Elle Yaz)", None)
 
         for it in self.scanned_items:
-            status_str = "✓ Hazır" if not it.is_empty else "⚠️ Boş Klasör"
+            status_str = "✓ Hazır" if not it.is_empty else " Boş Klasör"
             size_str = f" ({it.formatted_size})" if not it.is_empty else ""
             file_str = f" — {it.primary_package}" if it.primary_package else ""
             self.combo_scanned.addItem(
-                f"📦 {it.app_name} ({it.version_name}){file_str}{size_str} [{status_str}]",
+                f" {it.app_name} ({it.version_name}){file_str}{size_str} [{status_str}]",
                 it
             )
         self.combo_scanned.currentIndexChanged.connect(self._on_combo_selection_changed)
@@ -166,7 +166,7 @@ class AddSoftwareDialog(QDialog):
                 row.setContentsMargins(10, 8, 10, 8)
                 row.setSpacing(10)
 
-                icon = QLabel("📦")
+                icon = QLabel("")
                 icon.setStyleSheet("font-size: 14px;")
                 row.addWidget(icon)
 
@@ -175,7 +175,7 @@ class AddSoftwareDialog(QDialog):
                 row.addWidget(name_lbl)
 
                 file_lbl = QLabel(f"<code>{it.primary_package or 'Paket Dosyası Yok'}</code>")
-                file_lbl.setStyleSheet("color: #94a3b8; font-size: 11.5px;")
+                file_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
                 row.addWidget(file_lbl)
 
                 row.addStretch()
@@ -184,13 +184,13 @@ class AddSoftwareDialog(QDialog):
                     badge = QLabel(f"✓ {it.formatted_size}")
                     badge.setProperty("class", "PillBadge PillSuccess")
                 else:
-                    badge = QLabel("⚠️ Boş")
+                    badge = QLabel("Boş")
                     badge.setProperty("class", "PillBadge PillWarning")
                 row.addWidget(badge)
 
                 btn_select = TouchButton("Seç ➔", variant="ghost")
                 btn_select.setFixedHeight(28)
-                btn_select.setStyleSheet("min-height: 26px; padding: 2px 10px; font-size: 11.5px;")
+                btn_select.setStyleSheet("min-height: 26px; padding: 2px 10px; font-size: 12px;")
                 btn_select.clicked.connect(lambda _, item=it: self._select_scanned_item(item))
                 row.addWidget(btn_select)
 
@@ -351,7 +351,7 @@ class AddSoftwareDialog(QDialog):
         self.combo_scanned.blockSignals(True)
         self.combo_scanned.setCurrentIndex(0)
         self.combo_scanned.blockSignals(False)
-        self.lbl_source_status.setText("✏️ Manuel Mod: İstediğiniz paket bilgilerini aşağıdaki formdan serbestçe tanımlayabilirsiniz.")
+        self.lbl_source_status.setText(" Manuel Mod: İstediğiniz paket bilgilerini aşağıdaki formdan serbestçe tanımlayabilirsiniz.")
         self.lbl_source_status.setStyleSheet("color: #38bdf8; font-size: 12px;")
         self.lbl_error.clear()
 
@@ -373,7 +373,7 @@ class AddSoftwareDialog(QDialog):
 
         if item.is_empty:
             self.lbl_source_status.setText(
-                f"⚠️ Dikkat: Bu versiyon klasörü (softwares/{item.relative_path}) henüz boş. "
+                f" Dikkat: Bu versiyon klasörü (softwares/{item.relative_path}) henüz boş. "
                 f"Paket dosyasını daha sonra klasöre ekleyebilirsiniz."
             )
             self.lbl_source_status.setStyleSheet("color: #fbbf24; font-size: 12px;")
@@ -483,13 +483,13 @@ class SoftwareReqItemCard(QFrame):
         self.txt_version.setFixedWidth(100)
         self.txt_version.setStyleSheet("min-height: 34px;")
 
-        btn_fill = TouchButton("📦 Hafızadan Doldur...", variant="ghost")
+        btn_fill = TouchButton("Hafızadan Doldur...", variant="ghost")
         btn_fill.setFixedHeight(32)
-        btn_fill.setStyleSheet("min-height: 30px; padding: 2px 10px; font-size: 11.5px;")
+        btn_fill.setStyleSheet("min-height: 30px; padding: 2px 10px; font-size: 12px;")
         btn_fill.setToolTip("Hafızadaki (softwares/) paketlerden seçerek bu kartın alanlarını otomatik doldurur")
         btn_fill.clicked.connect(self._open_fill_dialog)
 
-        btn_del = TouchButton("🗑", variant="delete")
+        btn_del = TouchButton("Sil", variant="delete")
         btn_del.setFixedSize(32, 32)
         btn_del.setToolTip("Bu Paketi Kaldır")
         if self.on_delete:
@@ -610,7 +610,7 @@ class EquipmentItemCard(QFrame):
         self.chk_mandatory = QCheckBox("Zorunlu")
         self.chk_mandatory.setChecked(item.is_mandatory if item else True)
 
-        btn_del = TouchButton("🗑", variant="delete")
+        btn_del = TouchButton("Sil", variant="delete")
         btn_del.setFixedSize(32, 32)
         btn_del.setToolTip("Bu Malzemeyi Çıkar")
         if self.on_delete:
@@ -678,7 +678,7 @@ class ProfileEditorDialog(QDialog):
         h_layout = QHBoxLayout(header_frame)
         h_layout.setContentsMargins(18, 12, 18, 12)
 
-        icon_lbl = QLabel("⚙️")
+        icon_lbl = QLabel("")
         icon_lbl.setStyleSheet("font-size: 24px;")
         h_layout.addWidget(icon_lbl)
 
@@ -747,7 +747,7 @@ class ProfileEditorDialog(QDialog):
         left_layout.setContentsMargins(16, 14, 16, 14)
         left_layout.setSpacing(10)
 
-        lbl_s1 = QLabel("📍 Genel İstasyon Bilgileri")
+        lbl_s1 = QLabel("Genel İstasyon Bilgileri")
         lbl_s1.setStyleSheet("font-size: 14px; font-weight: 700; color: #60a5fa;")
         left_layout.addWidget(lbl_s1)
 
@@ -756,7 +756,7 @@ class ProfileEditorDialog(QDialog):
         self.txt_id.setPlaceholderText("Örn: bursa_gemlik_01")
         if self.is_edit_mode:
             self.txt_id.setEnabled(False)
-            self.txt_id.setStyleSheet("color: #64748b; background-color: #080c14;")
+            self.txt_id.setStyleSheet("color: #94a3b8; background-color: #080c14;")
         left_layout.addWidget(self.txt_id)
 
         left_layout.addWidget(self._make_field_label("Lokasyon Adı:"))
@@ -785,7 +785,7 @@ class ProfileEditorDialog(QDialog):
         right_layout.setContentsMargins(16, 14, 16, 14)
         right_layout.setSpacing(10)
 
-        lbl_s2 = QLabel("🖥️ Hedef Cihaz & SSH Parametreleri")
+        lbl_s2 = QLabel("Hedef Cihaz & SSH Parametreleri")
         lbl_s2.setStyleSheet("font-size: 14px; font-weight: 700; color: #34d399;")
         right_layout.addWidget(lbl_s2)
 
@@ -864,7 +864,7 @@ class ProfileEditorDialog(QDialog):
         right_layout.addStretch()
 
         tab_layout.addWidget(right_box, 1)
-        self.tabs.addTab(tab, "📍 Genel & Cihaz Bağlantısı")
+        self.tabs.addTab(tab, " Genel & Cihaz Bağlantısı")
 
     def _setup_tab_software(self):
         """Sekme 2: Yazılım Paketleri Gereksinimleri."""
@@ -886,7 +886,7 @@ class ProfileEditorDialog(QDialog):
         btn_add.clicked.connect(self._open_add_software_dialog)
         header_row.addWidget(btn_add)
 
-        btn_manual = TouchButton("✏️ Hızlı Boş Kart", variant="ghost")
+        btn_manual = TouchButton("Hızlı Boş Kart", variant="ghost")
         btn_manual.setFixedHeight(34)
         btn_manual.setStyleSheet("min-height: 32px; padding: 2px 12px; font-size: 12px;")
         btn_manual.setToolTip("Doğrudan elle yazabileceğiniz boş bir düzenleme kartı ekler")
@@ -905,7 +905,7 @@ class ProfileEditorDialog(QDialog):
         scroll.setWidget(container)
         layout.addWidget(scroll, 1)
 
-        self.tabs.addTab(tab, "📦 Yazılım Paketleri")
+        self.tabs.addTab(tab, " Yazılım Paketleri")
 
     def _setup_tab_equipment(self):
         """Sekme 3: Saha Ekipmanları Kontrol Listesi."""
@@ -920,14 +920,14 @@ class ProfileEditorDialog(QDialog):
         header_row.addWidget(desc)
         header_row.addStretch()
 
-        btn_pool = TouchButton("📦 Hafızadan Malzeme Ekle...", variant="primary")
+        btn_pool = TouchButton("Hafızadan Malzeme Ekle...", variant="primary")
         btn_pool.setFixedHeight(34)
         btn_pool.setStyleSheet("min-height: 32px; padding: 2px 14px; font-size: 12.5px; font-weight: 700;")
         btn_pool.setToolTip("Hafızadaki ekipman havuzundan arayıp tekli veya çoklu malzeme seçerek profile ekleyin")
         btn_pool.clicked.connect(self._open_equipment_catalog_dialog)
         header_row.addWidget(btn_pool)
 
-        btn_manual = TouchButton("✏️ Boş Satır Ekle", variant="ghost")
+        btn_manual = TouchButton("Boş Satır Ekle", variant="ghost")
         btn_manual.setFixedHeight(34)
         btn_manual.setStyleSheet("min-height: 32px; padding: 2px 12px; font-size: 12px;")
         btn_manual.setToolTip("Doğrudan elle yazabileceğiniz boş bir malzeme satırı ekler")
@@ -946,7 +946,7 @@ class ProfileEditorDialog(QDialog):
         scroll.setWidget(container)
         layout.addWidget(scroll, 1)
 
-        self.tabs.addTab(tab, "🎒 Saha Ekipmanları")
+        self.tabs.addTab(tab, " Saha Ekipmanları")
 
     def _setup_tab_config(self):
         """Sekme 4: Referans Konfigürasyon Şablonu (Baseline Config)."""
@@ -961,7 +961,7 @@ class ProfileEditorDialog(QDialog):
         header_row.addWidget(desc)
         header_row.addStretch()
 
-        btn_sample = TouchButton("📋 Örnek Şablon", variant="ghost")
+        btn_sample = TouchButton("Örnek Şablon", variant="ghost")
         btn_sample.setFixedHeight(32)
         btn_sample.setStyleSheet("min-height: 30px; padding: 2px 12px; font-size: 12px;")
         btn_sample.clicked.connect(self._load_sample_config)
@@ -988,7 +988,7 @@ class ProfileEditorDialog(QDialog):
         layout.addWidget(self.txt_baseline_config, 1)
 
         self.cfg_status_lbl = QLabel()
-        self.cfg_status_lbl.setStyleSheet("font-size: 12px; color: #64748b;")
+        self.cfg_status_lbl.setStyleSheet("font-size: 12px; color: #94a3b8;")
         layout.addWidget(self.cfg_status_lbl)
 
         self.tabs.addTab(tab, "📝 Referans Konfigürasyon")

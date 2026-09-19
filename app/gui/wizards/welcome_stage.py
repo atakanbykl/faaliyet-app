@@ -143,7 +143,7 @@ class MissionSelectionWidget(QWidget):
 
         self.lbl_stats = QLabel("0 Kayıtlı Görev")
         self.lbl_stats.setProperty("class", "PillBadge PillInfo")
-        self.lbl_stats.setStyleSheet("font-size: 11.5px; font-weight: 600; padding: 4px 12px;")
+        self.lbl_stats.setStyleSheet("font-size: 12px; font-weight: 600; padding: 4px 12px;")
         h_layout.addWidget(self.lbl_stats)
 
         # Başlığın pencere boyutuna göre dikeyde esnemesini engelle; içeriğinin doğal yüksekliğine fixle
@@ -170,14 +170,14 @@ class MissionSelectionWidget(QWidget):
         new_card_layout.setSpacing(10)
 
         card1_header = QHBoxLayout()
-        card1_title = QLabel("🚀 Yeni Faaliyet Başlat")
+        card1_title = QLabel("Yeni Faaliyet Başlat")
         card1_title.setStyleSheet("font-size: 15px; font-weight: 700; color: #60a5fa;")
         card1_header.addWidget(card1_title)
         card1_header.addStretch()
         new_card_layout.addLayout(card1_header)
 
         card1_desc = QLabel("Hedef istasyon ve operatör bilgisiyle yeni bir saha görevi başlatın.")
-        card1_desc.setStyleSheet("color: #94a3b8; font-size: 11.5px;")
+        card1_desc.setStyleSheet("color: #94a3b8; font-size: 12px;")
         new_card_layout.addWidget(card1_desc)
 
         # Lokasyon Seçimi
@@ -189,14 +189,14 @@ class MissionSelectionWidget(QWidget):
 
         self.btn_new_loc = TouchButton("+ Yeni", variant="ghost")
         self.btn_new_loc.setFixedHeight(24)
-        self.btn_new_loc.setStyleSheet("min-height: 22px; padding: 2px 8px; font-size: 11px; font-weight: 600; color: #60a5fa; border-color: rgba(59, 130, 246, 0.4); border-radius: 5px;")
+        self.btn_new_loc.setStyleSheet("min-height: 22px; padding: 2px 8px; font-size: 12px; font-weight: 600; color: #60a5fa; border-color: rgba(59, 130, 246, 0.4); border-radius: 5px;")
         self.btn_new_loc.setToolTip("Yeni Hedef Lokasyon Profili Tanımla")
         self.btn_new_loc.clicked.connect(self._on_create_location_clicked)
         loc_header.addWidget(self.btn_new_loc)
 
-        self.btn_edit_loc = TouchButton("✏️ Düzenle", variant="ghost")
+        self.btn_edit_loc = TouchButton("Düzenle", variant="ghost")
         self.btn_edit_loc.setFixedHeight(24)
-        self.btn_edit_loc.setStyleSheet("min-height: 22px; padding: 2px 8px; font-size: 11px; font-weight: 500; border-radius: 5px;")
+        self.btn_edit_loc.setStyleSheet("min-height: 22px; padding: 2px 8px; font-size: 12px; font-weight: 500; border-radius: 5px;")
         self.btn_edit_loc.setToolTip("Seçili Lokasyonun Parametrelerini Düzenle")
         self.btn_edit_loc.clicked.connect(self._on_edit_location_clicked)
         loc_header.addWidget(self.btn_edit_loc)
@@ -208,7 +208,7 @@ class MissionSelectionWidget(QWidget):
         new_card_layout.addWidget(self.loc_combo)
 
         self.loc_preview_lbl = QLabel()
-        self.loc_preview_lbl.setStyleSheet("color: #94a3b8; font-size: 11px; line-height: 1.3;")
+        self.loc_preview_lbl.setStyleSheet("color: #94a3b8; font-size: 12px; line-height: 1.3;")
         self.loc_preview_lbl.setWordWrap(True)
         new_card_layout.addWidget(self.loc_preview_lbl)
 
@@ -230,7 +230,7 @@ class MissionSelectionWidget(QWidget):
 
         btn_col = QVBoxLayout()
         btn_col.setSpacing(3)
-        lbl_dummy = QLabel(" ")
+        lbl_dummy = QLabel("")
         lbl_dummy.setStyleSheet("font-size: 12px;")
         btn_col.addWidget(lbl_dummy)
 
@@ -257,13 +257,13 @@ class MissionSelectionWidget(QWidget):
         resume_layout.setSpacing(10)
 
         card2_header = QHBoxLayout()
-        card2_title = QLabel("📂 Kayıtlı Faaliyetler")
+        card2_title = QLabel("Kayıtlı Faaliyetler")
         card2_title.setStyleSheet("font-size: 15px; font-weight: 700; color: #34d399;")
         card2_header.addWidget(card2_title)
         card2_header.addStretch()
 
         lbl_hint = QLabel("Devam etmek için bir göreve tıklayın")
-        lbl_hint.setStyleSheet("color: #64748b; font-size: 11px;")
+        lbl_hint.setStyleSheet("color: #94a3b8; font-size: 12px;")
         card2_header.addWidget(lbl_hint)
         resume_layout.addLayout(card2_header)
 
@@ -284,11 +284,11 @@ class MissionSelectionWidget(QWidget):
 
         # Boş Durum Bilgisi (Empty State)
         self.empty_state_lbl = QLabel(
-            "📋 Henüz kayıtlı bir geçmiş faaliyet bulunmuyor.<br>"
-            "<span style='color: #64748b;'>Sol panelden yeni bir saha faaliyeti başlatabilirsiniz.</span>"
+            " Henüz kayıtlı bir geçmiş faaliyet bulunmuyor.<br>"
+            "<span style='color: #94a3b8;'>Sol panelden yeni bir saha faaliyeti başlatabilirsiniz.</span>"
         )
         self.empty_state_lbl.setAlignment(Qt.AlignCenter)
-        self.empty_state_lbl.setStyleSheet("color: #64748b; font-size: 12px; line-height: 1.5; padding: 40px;")
+        self.empty_state_lbl.setStyleSheet("color: #94a3b8; font-size: 12px; line-height: 1.5; padding: 40px;")
         self.empty_state_lbl.setVisible(False)
         resume_layout.addWidget(self.empty_state_lbl)
 
@@ -331,41 +331,41 @@ class MissionSelectionWidget(QWidget):
         self.lbl_soft_arrow.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         soft_header.addWidget(self.lbl_soft_arrow)
 
-        soft_title = QLabel("💾 Hafızadaki Yazılımlar")
+        soft_title = QLabel("Hafızadaki Yazılımlar")
         soft_title.setStyleSheet("font-size: 15px; font-weight: 700; color: #38bdf8;")
         soft_title.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         soft_header.addWidget(soft_title)
 
         self.lbl_softwares_count = QLabel("0 Sürüm")
         self.lbl_softwares_count.setProperty("class", "PillBadge PillInfo")
-        self.lbl_softwares_count.setStyleSheet("font-size: 11px; padding: 2px 8px;")
+        self.lbl_softwares_count.setStyleSheet("font-size: 12px; padding: 2px 8px;")
         self.lbl_softwares_count.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         soft_header.addWidget(self.lbl_softwares_count)
 
         self.lbl_soft_hint = QLabel("(İçeriği görüntülemek için tıklayın)")
-        self.lbl_soft_hint.setStyleSheet("color: #64748b; font-size: 11.5px;")
+        self.lbl_soft_hint.setStyleSheet("color: #94a3b8; font-size: 12px;")
         self.lbl_soft_hint.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         soft_header.addWidget(self.lbl_soft_hint)
 
         soft_header.addStretch()
 
-        self.btn_refresh_soft = TouchButton("🔄 Yenile", variant="ghost")
+        self.btn_refresh_soft = TouchButton("Yenile", variant="ghost")
         self.btn_refresh_soft.setFixedHeight(26)
-        self.btn_refresh_soft.setStyleSheet("min-height: 24px; padding: 2px 10px; font-size: 11.5px; border-radius: 6px;")
+        self.btn_refresh_soft.setStyleSheet("min-height: 24px; padding: 2px 10px; font-size: 12px; border-radius: 6px;")
         self.btn_refresh_soft.setToolTip("softwares/ klasörünü yeniden tara")
         self.btn_refresh_soft.clicked.connect(self._refresh_softwares)
         soft_header.addWidget(self.btn_refresh_soft)
 
-        self.btn_open_soft_dir = TouchButton("📂 Klasörü Aç", variant="ghost")
+        self.btn_open_soft_dir = TouchButton("Klasörü Aç", variant="ghost")
         self.btn_open_soft_dir.setFixedHeight(26)
-        self.btn_open_soft_dir.setStyleSheet("min-height: 24px; padding: 2px 10px; font-size: 11.5px; border-radius: 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);")
+        self.btn_open_soft_dir.setStyleSheet("min-height: 24px; padding: 2px 10px; font-size: 12px; border-radius: 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);")
         self.btn_open_soft_dir.setToolTip("softwares/ kök klasörünü dosya gezgininde aç")
         self.btn_open_soft_dir.clicked.connect(self._on_open_softwares_folder)
         soft_header.addWidget(self.btn_open_soft_dir)
 
         self.btn_soft_toggle = TouchButton("▶ Genişlet", variant="ghost")
         self.btn_soft_toggle.setFixedHeight(26)
-        self.btn_soft_toggle.setStyleSheet("min-height: 24px; padding: 2px 12px; font-size: 11.5px; font-weight: 600; border-radius: 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);")
+        self.btn_soft_toggle.setStyleSheet("min-height: 24px; padding: 2px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);")
         self.btn_soft_toggle.setToolTip("Hafızadaki yazılımlar listesini genişlet / daralt")
         self.btn_soft_toggle.clicked.connect(self._toggle_softwares_expanded)
         soft_header.addWidget(self.btn_soft_toggle)
@@ -381,7 +381,7 @@ class MissionSelectionWidget(QWidget):
         self.soft_body_layout.setSpacing(10)
 
         soft_desc = QLabel("Taşınabilir diskteki <code>softwares/&lt;uygulama&gt;/&lt;versiyon&gt;</code> hiyerarşisi taranarak tüm ana ve yardımcı yazılımlar listelenir.")
-        soft_desc.setStyleSheet("color: #64748b; font-size: 11.5px;")
+        soft_desc.setStyleSheet("color: #94a3b8; font-size: 12px;")
         self.soft_body_layout.addWidget(soft_desc)
 
         # Scrollable Yazılım Paketleri Listesi
@@ -402,8 +402,8 @@ class MissionSelectionWidget(QWidget):
 
         # Boş Durum Bilgisi (Software Empty State)
         self.soft_empty_lbl = QLabel(
-            "📦 <b>softwares/</b> klasöründe henüz paket bulunamadı.<br>"
-            "<span style='color: #64748b;'>Paketleri (.tar.gz, .zip vb.) klasöre bırakıp 'Yenile' butonuna basabilirsiniz.</span>"
+            " <b>softwares/</b> klasöründe henüz paket bulunamadı.<br>"
+            "<span style='color: #94a3b8;'>Paketleri (.tar.gz, .zip vb.) klasöre bırakıp 'Yenile' butonuna basabilirsiniz.</span>"
         )
         self.soft_empty_lbl.setAlignment(Qt.AlignCenter)
         self.soft_empty_lbl.setStyleSheet("color: #94a3b8; font-size: 12.5px; line-height: 1.5; padding: 24px;")
@@ -475,7 +475,7 @@ class MissionSelectionWidget(QWidget):
         empty_count = sum(1 for s in all_items if s.is_empty)
 
         if empty_count > 0:
-            self.lbl_softwares_count.setText(f"{len(grouped)} Yazılım • {total_count} Sürüm ({ready_count} Hazır, {empty_count} Boş ⚠️)")
+            self.lbl_softwares_count.setText(f"{len(grouped)} Yazılım • {total_count} Sürüm ({ready_count} Hazır, {empty_count} Boş )")
             self.lbl_softwares_count.setProperty("class", "PillBadge PillWarning")
         else:
             self.lbl_softwares_count.setText(f"{len(grouped)} Yazılım • {total_count} Sürüm (Hazır)")
@@ -546,7 +546,7 @@ class MissionSelectionWidget(QWidget):
         header_row = QHBoxLayout()
         header_row.setSpacing(10)
 
-        app_icon = QLabel("📁")
+        app_icon = QLabel("")
         app_icon.setStyleSheet("font-size: 19px;")
         header_row.addWidget(app_icon)
 
@@ -557,7 +557,7 @@ class MissionSelectionWidget(QWidget):
         name_col.addWidget(name_lbl)
 
         path_lbl = QLabel(f"softwares/{app_name}/")
-        path_lbl.setStyleSheet("font-size: 11px; color: #64748b; font-family: monospace;")
+        path_lbl.setStyleSheet("font-size: 12px; color: #94a3b8; font-family: monospace;")
         name_col.addWidget(path_lbl)
         header_row.addLayout(name_col)
 
@@ -567,7 +567,7 @@ class MissionSelectionWidget(QWidget):
         ready_count = sum(1 for v in versions if not v.is_empty)
         empty_count = sum(1 for v in versions if v.is_empty)
         if empty_count > 0:
-            badge_text = f"{len(versions)} Sürüm ({ready_count} Hazır, {empty_count} Boş ⚠️)"
+            badge_text = f"{len(versions)} Sürüm ({ready_count} Hazır, {empty_count} Boş )"
             badge_cls = "PillBadge PillWarning"
         else:
             badge_text = f"{len(versions)} Sürüm (Hazır)"
@@ -580,9 +580,9 @@ class MissionSelectionWidget(QWidget):
 
         # Uygulama Dizinini Aç Butonu
         app_dir_path = str(self.asset_manager.packages_dir / app_name)
-        btn_app_dir = TouchButton("📂 Klasörü Aç", variant="ghost")
+        btn_app_dir = TouchButton("Klasörü Aç", variant="ghost")
         btn_app_dir.setFixedHeight(26)
-        btn_app_dir.setStyleSheet("min-height: 24px; padding: 2px 10px; font-size: 11px; border-radius: 6px;")
+        btn_app_dir.setStyleSheet("min-height: 24px; padding: 2px 10px; font-size: 12px; border-radius: 6px;")
         btn_app_dir.setToolTip(f"'{app_name}' uygulamasının klasörünü aç")
         btn_app_dir.clicked.connect(lambda checked=False, p=app_dir_path: QDesktopServices.openUrl(QUrl.fromLocalFile(p)))
         header_row.addWidget(btn_app_dir)
@@ -643,7 +643,7 @@ class MissionSelectionWidget(QWidget):
 
         # Ağaç Bağlantı Çizgisi Simge
         branch_icon = QLabel("└──" if is_last else "├──")
-        branch_icon.setStyleSheet("color: #64748b; font-family: monospace; font-size: 13px; font-weight: bold;")
+        branch_icon.setStyleSheet("color: #94a3b8; font-family: monospace; font-size: 13px; font-weight: bold;")
         row.addWidget(branch_icon)
 
         # Versiyon Rozeti
@@ -652,39 +652,39 @@ class MissionSelectionWidget(QWidget):
             v_lbl.setStyleSheet(
                 "background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; "
                 "border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 4px; "
-                "padding: 2px 8px; font-size: 11.5px; font-weight: 700;"
+                "padding: 2px 8px; font-size: 12px; font-weight: 700;"
             )
         else:
             v_lbl.setStyleSheet(
                 "background-color: rgba(56, 189, 248, 0.15); color: #38bdf8; "
                 "border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; "
-                "padding: 2px 8px; font-size: 11.5px; font-weight: 700;"
+                "padding: 2px 8px; font-size: 12px; font-weight: 700;"
             )
         row.addWidget(v_lbl)
 
         # Bilgi Satırı
         if item.is_empty:
             meta_lbl = QLabel(
-                "<span style='color: #f59e0b; font-weight: 600;'>⚠️ İçi Boş</span> "
+                "<span style='color: #f59e0b; font-weight: 600;'> İçi Boş</span> "
                 "<span style='color: #94a3b8;'>— Bu versiyon klasöründe kurulabilir paket dosyası (.tar.gz, .zip vb.) bulunmuyor</span> &nbsp;•&nbsp; "
-                f"<span style='color: #64748b; font-family: monospace;'>softwares/{item.relative_path}</span>"
+                f"<span style='color: #94a3b8; font-family: monospace;'>softwares/{item.relative_path}</span>"
             )
         else:
             pkg_name = item.primary_package or (item.files[0] if item.files else "Paket Dosyası")
-            more_str = f" <span style='color: #64748b;'>(+{item.file_count - 1} ek dosya)</span>" if item.file_count > 1 else ""
+            more_str = f" <span style='color: #94a3b8;'>(+{item.file_count - 1} ek dosya)</span>" if item.file_count > 1 else ""
             meta_lbl = QLabel(
-                f"📦 <b style='color: #f1f5f9;'>{pkg_name}</b>{more_str} &nbsp;&nbsp;•&nbsp;&nbsp; "
+                f" <b style='color: #f1f5f9;'>{pkg_name}</b>{more_str} &nbsp;&nbsp;•&nbsp;&nbsp; "
                 f"⚖️ <b style='color: #cbd5e1;'>{item.formatted_size}</b> &nbsp;&nbsp;•&nbsp;&nbsp; 🕒 {item.modified_time_str} &nbsp;&nbsp;•&nbsp;&nbsp; "
-                f"<span style='color: #64748b; font-family: monospace;'>softwares/{item.relative_path}</span>"
+                f"<span style='color: #94a3b8; font-family: monospace;'>softwares/{item.relative_path}</span>"
             )
-        meta_lbl.setStyleSheet("font-size: 11.5px;")
+        meta_lbl.setStyleSheet("font-size: 12px;")
         row.addWidget(meta_lbl)
 
         row.addStretch()
 
         # Durum Rozeti
         if item.is_empty:
-            status_badge = QLabel("⚠️ Paket Yok")
+            status_badge = QLabel("Paket Yok")
             status_badge.setProperty("class", "PillBadge PillWarning")
             status_badge.setStyleSheet("font-size: 10px; font-weight: 700; padding: 2px 8px;")
         else:
@@ -694,9 +694,9 @@ class MissionSelectionWidget(QWidget):
         row.addWidget(status_badge)
 
         # Klasörü Aç Butonu (Geniş & Rahat Tıklanabilir)
-        btn_v_folder = TouchButton("📂 Klasörü Aç", variant="ghost")
+        btn_v_folder = TouchButton("Klasörü Aç", variant="ghost")
         btn_v_folder.setFixedHeight(26)
-        btn_v_folder.setStyleSheet("font-size: 11px; padding: 2px 8px; min-height: 24px; border-radius: 5px;")
+        btn_v_folder.setStyleSheet("font-size: 12px; padding: 2px 8px; min-height: 24px; border-radius: 5px;")
         btn_v_folder.setToolTip(f"'{item.relative_path}' versiyon klasörünü aç")
         target_f = item.folder_path
         btn_v_folder.clicked.connect(lambda checked=False, f=target_f: QDesktopServices.openUrl(QUrl.fromLocalFile(f)))

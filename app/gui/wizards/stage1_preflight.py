@@ -86,13 +86,13 @@ class Stage1PreflightWidget(QWidget):
         self.pkg_layout.setSpacing(14)
 
         pkg_header = QHBoxLayout()
-        lbl_s2 = QLabel("📦 Yazılım Paketleri & Konfigürasyon")
+        lbl_s2 = QLabel("Yazılım Paketleri & Konfigürasyon")
         lbl_s2.setStyleSheet("font-size: 15px; font-weight: 700; color: #f8fafc;")
         pkg_header.addWidget(lbl_s2)
         pkg_header.addStretch()
 
         lbl_pkg_hint = QLabel("Hedefe aktarılacak bileşenler")
-        lbl_pkg_hint.setStyleSheet("color: #64748b; font-size: 12px;")
+        lbl_pkg_hint.setStyleSheet("color: #94a3b8; font-size: 12px;")
         pkg_header.addWidget(lbl_pkg_hint)
         self.pkg_layout.addLayout(pkg_header)
 
@@ -125,13 +125,13 @@ class Stage1PreflightWidget(QWidget):
         self.equip_layout.setSpacing(14)
 
         equip_header = QHBoxLayout()
-        lbl_s3 = QLabel("🎒 Saha Ekipmanları ve Malzeme Kontrol Listesi")
+        lbl_s3 = QLabel("Saha Ekipmanları ve Malzeme Kontrol Listesi")
         lbl_s3.setStyleSheet("font-size: 15px; font-weight: 700; color: #34d399;")
         equip_header.addWidget(lbl_s3)
         equip_header.addStretch()
 
         lbl_hint = QLabel("Maddeye tıklayarak işaretleyin")
-        lbl_hint.setStyleSheet("color: #64748b; font-size: 12px;")
+        lbl_hint.setStyleSheet("color: #94a3b8; font-size: 12px;")
         equip_header.addWidget(lbl_hint)
         self.equip_layout.addLayout(equip_header)
 
@@ -153,7 +153,7 @@ class Stage1PreflightWidget(QWidget):
         bottom_bar.addWidget(self.status_summary_lbl)
         bottom_bar.addStretch()
 
-        self.chk_force_equipment = QCheckBox("⚠️ Zorunlu Ekipmanı Yoksay (Force Geçiş)")
+        self.chk_force_equipment = QCheckBox(" Zorunlu Ekipmanı Yoksay (Force Geçiş)")
         self.chk_force_equipment.setStyleSheet("""
             QCheckBox {
                 color: #fbbf24;
@@ -237,7 +237,7 @@ class Stage1PreflightWidget(QWidget):
             name_lbl.setStyleSheet("font-size: 13px; color: #f8fafc;")
 
             file_lbl = QLabel(f"<code>{req.package_filename}</code>")
-            file_lbl.setStyleSheet("color: #94a3b8; font-size: 11px;")
+            file_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
             info_layout.addWidget(name_lbl)
             info_layout.addWidget(file_lbl)
             row_layout.addLayout(info_layout)
@@ -316,8 +316,8 @@ class Stage1PreflightWidget(QWidget):
                 self.complete_btn.set_variant("success")
             else:
                 missing = self.checklist_widget.get_missing_mandatory_items() if self.checklist_widget else []
-                self.status_summary_lbl.setText(f"<span style='color: #fbbf24;'>⚠️ Force Aktif: {len(missing)} zorunlu malzeme işaretlenmedi</span>")
-                self.complete_btn.setText("⚠️ Eksik Ekipmanla Yine de Yola Çık  ➔")
+                self.status_summary_lbl.setText(f"<span style='color: #fbbf24;'> Force Aktif: {len(missing)} zorunlu malzeme işaretlenmedi</span>")
+                self.complete_btn.setText(" Eksik Ekipmanla Yine de Yola Çık  ➔")
                 self.complete_btn.setEnabled(True)
                 self.complete_btn.set_variant("warning")
         else:
